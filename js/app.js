@@ -249,12 +249,61 @@ let puntoEditando = 'salida';
 document.addEventListener('click', (e) => {
   const el = e.target.closest('.campo-punto');
   if (!el) return;
-  puntoEditando = el.dataset.punto;
-  $('#dlg-punto-titulo').textContent = puntoEditando === 'salida' ? 'Salida' : 'Destino';
+  abrirBuscador(el.dataset.punto);
+});
+// modo: 'salida' | 'destino' | 'ir' (solo llevar el mapa a un lugar)
+function abrirBuscador(modo) {
+  puntoEditando = modo;
+  $('#dlg-punto-titulo').textContent = modo === 'salida' ? 'Salida' : modo === 'destino' ? 'Destino' : 'Buscar lugar';
+  $('#pt-ubicacion').hidden = modo === 'ir';
+  $('#pt-mapa').hidden = modo === 'ir';
+  const hab = D.ajustes().habitual;
+  $('#pt-habitual').hidden = !hab || modo === 'ir';
+  if (hab) $('#pt-habitual').textContent = `Usar mi salida habitual: ${hab.etiqueta}`;
   $('#pt-resultados').innerHTML = '';
   $('#pt-texto').value = '';
   $('#dlg-punto').showModal();
+  setTimeout(() => $('#pt-texto').focus(), 50);
+}
+$('#btn-buscar').addEventListener('click', () => abrirBuscador('ir'));
+$('#pt-habitual').addEventListener('click', () => {
+  const hab = D.ajustes().habitual;
+  $('#dlg-punto').close();
+  if (!hab) return;
+  fijarPunto(puntoEditando, hab.p, hab.etiqueta);
+  mapa.setView(hab.p, Math.max(mapa.getZoom(), 11));
 });
+
+// Marca del lugar buscado, con acciones rápidas.
+const capaLugar = L.layerGroup().addTo(mapa);
+function irALugar(p, etiqueta) {
+  capaLugar.clearLayers();
+  mapa.setView(p, 11);
+  const m = L.marker(p, { icon: L.divIcon({ className: '', html: '<div class="pin-mapa lugar"></div>', iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(capaLugar);
+  const html = `<div class="pop"><h4>${esc(etiqueta)}</h4>
+    <p class="nota" style="margin:4px 0 10px">Buscando curvas alrededor…</p>
+    <div class="botones">
+      <button class="pri" data-acc="salida">Salir desde aquí</button>
+      <button class="sec" data-acc="habitual">Guardar como salida habitual</button>
+    </div></div>`;
+  const pop = L.popup({ maxWidth: 280, offset: [0, -8] }).setLatLng(p).setContent(html).openOn(mapa);
+  pop.getElement().querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.acc === 'salida') {
+      fijarPunto('salida', p, etiqueta);
+      capaLugar.clearLayers();
+      mapa.closePopup();
+      $('#panel').classList.remove('plegado');
+    } else {
+      const a = D.ajustes();
+      a.habitual = { p, etiqueta };
+      D.guardarAjustes(a);
+      if (!S.salida) fijarPunto('salida', p, etiqueta);
+      b.textContent = 'Guardada como habitual ✓';
+      b.disabled = true;
+    }
+  }));
+  return m;
+}
 document.addEventListener('keydown', (e) => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('campo-punto')) { e.preventDefault(); e.target.click(); }
 });
@@ -299,9 +348,11 @@ $('#pt-form').addEventListener('submit', async (e) => {
     ul.innerHTML = res.map((r, i) => `<li><button data-i="${i}">${esc(r.etiqueta)}</button></li>`).join('');
     ul.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
       const r = res[+b.dataset.i];
-      fijarPunto(puntoEditando, r.p, r.etiqueta.split(',').slice(0, 2).join(','));
-      mapa.setView(r.p, Math.max(mapa.getZoom(), 11));
+      const etiqueta = r.etiqueta.split(',').slice(0, 2).join(',');
       $('#dlg-punto').close();
+      if (puntoEditando === 'ir') { $('#panel').classList.add('plegado'); irALugar(r.p, etiqueta); return; }
+      fijarPunto(puntoEditando, r.p, etiqueta);
+      mapa.setView(r.p, Math.max(mapa.getZoom(), 11));
     }));
   } catch (err) { ul.innerHTML = `<li class="nota">${esc(err.message)}</li>`; }
 });
@@ -638,11 +689,16 @@ $('#btn-ajustes').addEventListener('click', () => {
   $('#aj-autonomia').value = a.autonomia;
   $('#aj-reserva').value = a.reserva;
   $('#aj-peajes').checked = a.peajes;
+  $('#aj-habitual').textContent = a.habitual
+    ? `Tu salida habitual es ${a.habitual.etiqueta}. La app arranca allí y la pone como salida.`
+    : 'Busca un lugar con la lupa y pulsa "Guardar como salida habitual" para que la app arranque allí.';
+  $('#aj-quitar-habitual').hidden = !a.habitual;
   pintarDatos();
   $('#dlg-ajustes').showModal();
 });
 $('#aj-guardar').addEventListener('click', () => {
   const a = {
+    ...D.ajustes(),
     clave: $('#aj-clave').value.trim(),
     autonomia: Math.max(30, +$('#aj-autonomia').value || 200),
     reserva: Math.max(0, +$('#aj-reserva').value || 0),
@@ -652,6 +708,11 @@ $('#aj-guardar').addEventListener('click', () => {
   $('#peajes').checked = a.peajes;
   $('#dlg-ajustes').close();
   estado('Ajustes guardados.', { dura: 2500 });
+});
+$('#aj-quitar-habitual').addEventListener('click', () => {
+  const a = D.ajustes(); a.habitual = null; D.guardarAjustes(a);
+  $('#aj-habitual').textContent = 'Has quitado la salida habitual.';
+  $('#aj-quitar-habitual').hidden = true;
 });
 $('#aj-descargar').addEventListener('click', async (e) => {
   const b = e.currentTarget;
@@ -719,6 +780,7 @@ mapa.on('dragstart', () => {
 (async function inicio() {
   const a = D.ajustes();
   $('#peajes').checked = a.peajes;
+  if (a.habitual) { S.salida = { p: a.habitual.p, etiqueta: a.habitual.etiqueta }; mapa.setView(a.habitual.p, 11); }
   pintarCamposPunto();
   pintarListaTramos();
   await cargarGuardadas();

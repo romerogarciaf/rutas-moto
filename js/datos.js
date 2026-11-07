@@ -12,7 +12,7 @@ const ORS = 'https://api.heigit.org/openrouteservice';
 const PELIAS = 'https://api.heigit.org/pelias/v1';
 
 // ---------- Ajustes (en el propio iPhone) ----------
-const DEF = { clave: '', autonomia: 200, reserva: 30, peajes: true };
+const DEF = { clave: '', autonomia: 200, reserva: 30, peajes: true, habitual: null };
 export function ajustes() {
   try { return { ...DEF, ...JSON.parse(localStorage.getItem('ajustes') || '{}') }; } catch { return { ...DEF }; }
 }

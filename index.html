@@ -26,6 +26,9 @@
     <span>Rutas de Curvas</span>
   </div>
   <nav class="barra-acciones">
+    <button id="btn-buscar" class="icono" aria-label="Buscar un lugar" title="Buscar un lugar">
+      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M15 15l5.5 5.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+    </button>
     <button id="btn-favoritas" class="icono" aria-label="Rutas favoritas" title="Rutas favoritas">
       <svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
     </button>
@@ -128,6 +131,7 @@
 <dialog id="dlg-punto" class="dialogo">
   <form method="dialog" class="dlg-cab"><h2 id="dlg-punto-titulo">Salida</h2><button class="icono" aria-label="Cerrar">✕</button></form>
   <div class="dlg-cuerpo">
+    <button class="sec ancho" id="pt-habitual" hidden>Usar mi salida habitual</button>
     <button class="sec ancho" id="pt-ubicacion">Usar mi ubicación actual</button>
     <button class="sec ancho" id="pt-mapa">Elegir tocando en el mapa</button>
     <form id="pt-form" class="buscador">
@@ -161,6 +165,10 @@
     <p class="nota">La app avisa si en algún punto de la ruta hay más distancia entre gasolineras que tu autonomía menos el margen. Supone que sales con el depósito lleno.</p>
 
     <label class="interruptor"><input type="checkbox" id="aj-peajes"> <span>Evitar peajes por defecto</span></label>
+
+    <h3>Salida habitual</h3>
+    <p id="aj-habitual" class="nota"></p>
+    <button class="sec" id="aj-quitar-habitual" hidden>Quitar salida habitual</button>
 
     <h3>Datos de carreteras</h3>
     <p class="nota">Las curvas se calculan con datos de OpenStreetMap y se guardan en el iPhone. Descargar Madrid y alrededores de una vez agiliza las rutas largas (tarda unos minutos).</p>
