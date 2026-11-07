@@ -97,7 +97,7 @@ function anadirTramos(lista) {
 }
 
 // ---------- Iconos de zonas de curvas (agrupados al alejar el mapa) ----------
-const GLIFO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20c0-3.5 3-4 5.5-5.2S17 12 17 9.5 15 6 12.5 6 9 7 9 8.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+const GLIFO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20.5C6 16 12 16.5 12 12S18 8 18 3.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
 let tZonas;
 function programarZonas() { clearTimeout(tZonas); tZonas = setTimeout(pintarZonas, 250); }
 function pintarZonas() {
@@ -429,7 +429,48 @@ function cambiarModo(modo) {
   if (modo === 'tramos') pintarSeleccion(); else capaSeleccion.clearLayers();
 }
 $$('.pestanas button').forEach((b) => b.addEventListener('click', () => cambiarModo(b.dataset.modo)));
-$('#asa').addEventListener('click', () => $('#panel').classList.toggle('plegado'));
+// Panel: se pliega o despliega tocando la rayita o arrastrando la rayita o las pestañas.
+(function arrastrePanel() {
+  const panel = $('#panel');
+  let ini = null, ignorarClic = false;
+  const visiblePlegado = () => 78 + (parseFloat(getComputedStyle(panel).paddingBottom) || 0);
+  const maxBajada = () => Math.max(0, panel.offsetHeight - visiblePlegado());
+  const empezar = (e) => {
+    ini = { y: e.clientY, base: panel.classList.contains('plegado') ? maxBajada() : 0, mov: false, id: e.pointerId, el: e.currentTarget };
+  };
+  const mover = (e) => {
+    if (!ini || e.pointerId !== ini.id) return;
+    const dy = e.clientY - ini.y;
+    if (!ini.mov && Math.abs(dy) < 6) return;
+    if (!ini.mov) { ini.mov = true; try { ini.el.setPointerCapture(ini.id); } catch {} panel.classList.add('arrastrando'); }
+    const t = Math.min(maxBajada(), Math.max(0, ini.base + dy));
+    panel.style.transform = `translateY(${t}px)`;
+  };
+  const soltar = (e) => {
+    if (!ini || e.pointerId !== ini.id) return;
+    if (ini.mov) {
+      const dy = e.clientY - ini.y;
+      const plegar = ini.base === 0 ? dy > 50 : dy > -50;
+      panel.classList.remove('arrastrando');
+      panel.style.transform = '';
+      panel.classList.toggle('plegado', plegar);
+      ignorarClic = true;
+      setTimeout(() => (ignorarClic = false), 350);
+    }
+    ini = null;
+  };
+  for (const el of [$('#asa'), $('.pestanas')]) {
+    el.addEventListener('pointerdown', empezar);
+    el.addEventListener('pointermove', mover);
+    el.addEventListener('pointerup', soltar);
+    el.addEventListener('pointercancel', soltar);
+    // Tras un arrastre no se cuenta el toque como clic en una pestaña
+    el.addEventListener('click', (e) => { if (ignorarClic) { e.stopPropagation(); e.preventDefault(); } }, true);
+  }
+  $('#asa').addEventListener('click', () => { if (!ignorarClic) panel.classList.toggle('plegado'); });
+  // Al tocar una pestaña con el panel plegado, se despliega.
+  $('.pestanas').addEventListener('click', () => { if (!ignorarClic) panel.classList.remove('plegado'); });
+})();
 const finElegido = () => $('input[name="fin"]:checked').value;
 $$('input[name="fin"]').forEach((r) => r.addEventListener('change', () => {
   $('.modo[data-modo="tramos"] .campo-punto[data-punto="destino"]').hidden = finElegido() !== 'destino';
