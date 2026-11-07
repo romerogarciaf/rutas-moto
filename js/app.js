@@ -297,6 +297,11 @@ function pintarCamposPunto() {
   }
 }
 function fijarPunto(tipo, p, etiqueta) {
+  if (tipo === 'casa') {
+    const a = D.ajustes(); a.casa = { p, etiqueta }; D.guardarAjustes(a);
+    estado(`Casa guardada: ${etiqueta}. Vuelve a abrir la ruta desde la estrella.`, { dura: 6000 });
+    return;
+  }
   S[tipo] = { p, etiqueta };
   invalidarResultado();
   pintarCamposPunto();
@@ -310,11 +315,11 @@ document.addEventListener('click', (e) => {
 // modo: 'salida' | 'destino' | 'ir' (solo llevar el mapa a un lugar)
 function abrirBuscador(modo) {
   puntoEditando = modo;
-  $('#dlg-punto-titulo').textContent = modo === 'salida' ? 'Salida' : modo === 'destino' ? 'Destino' : 'Buscar lugar';
+  $('#dlg-punto-titulo').textContent = { salida: 'Salida', destino: 'Destino', casa: 'Tu casa' }[modo] || 'Buscar lugar';
   $('#pt-ubicacion').hidden = modo === 'ir';
-  $('#pt-mapa').hidden = modo === 'ir';
+  $('#pt-mapa').hidden = modo === 'ir' || modo === 'casa';
   const hab = D.ajustes().habitual;
-  $('#pt-habitual').hidden = !hab || modo === 'ir';
+  $('#pt-habitual').hidden = !hab || modo === 'ir' || modo === 'casa';
   if (hab) $('#pt-habitual').textContent = `Usar mi salida habitual: ${hab.etiqueta}`;
   $('#pt-resultados').innerHTML = '';
   $('#pt-texto').value = '';
@@ -369,7 +374,7 @@ $('#pt-ubicacion').addEventListener('click', () => {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const p = [pos.coords.latitude, pos.coords.longitude];
-      fijarPunto(puntoEditando, p, 'Mi ubicación');
+      fijarPunto(puntoEditando, p, puntoEditando === 'casa' ? 'Casa (ubicación guardada)' : 'Mi ubicación');
       mapa.setView(p, Math.max(mapa.getZoom(), 11));
       estado('');
     },
@@ -589,6 +594,12 @@ function mostrarResultado(r) {
       r.plan.length ? `${r.plan.length} tramo${r.plan.length === 1 ? '' : 's'} revirado${r.plan.length === 1 ? '' : 's'}: ${Math.round(kmCurvas)} km, unos ${minRevirados} min. El resto son enlaces entre tramos.` : ''],
   ];
   if (r.hayVuelta) filas.push(['r-vuelta', etiquetaVuelta, rep.vuelta]);
+  if (r.paradas) {
+    // Ruta por paradas: un tramo por cada par de paradas consecutivas.
+    filas.length = 0;
+    const clases = ['r-ida', 'r-curvas', 'r-vuelta'];
+    r.legs.forEach((l, i) => filas.push([clases[i % 3], `${r.paradas[i].nombre} → ${r.paradas[i + 1].nombre}`, { s: l.duration, m: l.distance }]));
+  }
   const nombrePorDefecto = `Ruta ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`;
   const el = $('#resultado');
   el.innerHTML = `
@@ -626,7 +637,7 @@ async function revisarGasolina(r) {
   try { gs = await D.gasolineras({ s: caja.s - pad, n: caja.n + pad, w: caja.w - pad, e: caja.e + pad }); }
   catch { if (S.resultado === r) $('#gas').textContent = 'No se pudieron cargar las gasolineras ahora mismo.'; return; }
   if (S.resultado !== r) return;
-  const muestra = C.simplificar(r.coords, 15);
+  const muestra = C.remuestrear(r.coords, 150); // conserva la longitud real del recorrido
   const { enRuta, totalKm, acum } = C.gasolinerasEnRuta(muestra, gs, 800);
   const { util, huecos } = C.huecosSinGasolina(enRuta, totalKm, aj.autonomia, aj.reserva);
   const icono = '<svg viewBox="0 0 24 24"><path d="M5 21V4.5C5 3.7 5.7 3 6.5 3h7c.8 0 1.5.7 1.5 1.5V21M3.5 21h13M8 7h4M15 9l3 2v7a1.5 1.5 0 0 0 3 0V9l-3-3" fill="none" stroke="#1b1f22" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -650,6 +661,7 @@ async function revisarGasolina(r) {
 }
 
 function puntosClave(r) {
+  if (r.via) return r.via;
   const pts = [r.A];
   for (const { t, rev } of r.plan) {
     const c = rev ? t.coords.slice().reverse() : t.coords;
@@ -673,6 +685,7 @@ async function exportarGPX() {
   const coords = C.simplificar(r.coords, 3);
   const wpts = [{ p: r.A, nombre: 'Salida' }];
   r.plan.forEach(({ t, rev }, i) => wpts.push({ p: rev ? t.coords[t.coords.length - 1] : t.coords[0], nombre: `Tramo ${i + 1}: ${nombreTramo(t)}` }));
+  if (r.paradas && r.via) r.via.slice(1, -1).forEach((p, i) => wpts.push({ p, nombre: `Antes de ${r.paradas[i + 1].nombre}` }));
   if (r.B && !r.circular) wpts.push({ p: r.B, nombre: 'Destino' });
   const texto = C.gpx(nombre, coords, wpts);
   const archivo = nombre.replace(/[^\p{L}\p{N} _-]/gu, '').trim().replace(/\s+/g, '_') || 'ruta';
@@ -697,6 +710,7 @@ async function guardarFavorita() {
     plan: r.plan.map(({ t, rev }) => ({ t: { id: t.id, coords: t.coords, km: t.km, lvl: t.lvl, dens: t.dens, ref: t.ref, name: t.name, ids: t.ids }, rev })),
     marcas: r.marcas, legs: r.legs, distance: r.distance, duration: r.duration,
     coords: C.simplificar(r.coords, 4), avisos: r.avisos,
+    ...(r.paradas ? { paradas: r.paradas, via: r.via, sinEntrar: r.sinEntrar } : {}),
   };
   try {
     await D.idb.put('favoritas', fav);
@@ -708,15 +722,22 @@ async function pintarFavoritas() {
   const ul = $('#lista-favoritas');
   let favs = [];
   try { favs = await D.idb.all('favoritas'); } catch {}
-  favs.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const pre = (f) => (String(f.id).startsWith('pre-') ? 1 : 0); // las precargadas, siempre arriba
+  favs.sort((a, b) => pre(b) - pre(a) || b.fecha.localeCompare(a.fecha));
   if (!favs.length) { ul.innerHTML = '<li class="vacio">Aún no has guardado ninguna ruta. Diseña una y pulsa Guardar.</li>'; return; }
+  const detalle = (f) => {
+    if (f.pendiente) return `${f.paradas.length} paradas · Toca Abrir para calcularla`;
+    const extra = f.paradas ? `${f.paradas.length} paradas` : `${f.plan.length} tramos`;
+    return `${fmtKm(f.distance)} · ${fmtH(f.duration)} · ${extra} · ${new Date(f.fecha).toLocaleDateString('es-ES')}`;
+  };
   ul.innerHTML = favs.map((f) => `<li>
-    <div><b>${esc(f.nombre)}</b><small>${fmtKm(f.distance)} · ${fmtH(f.duration)} · ${f.plan.length} tramos · ${new Date(f.fecha).toLocaleDateString('es-ES')}</small></div>
+    <div><b>${esc(f.nombre)}</b><small>${detalle(f)}</small></div>
     <div class="botones"><button class="pri" data-abrir="${f.id}">Abrir</button><button class="sec" data-borrar="${f.id}" aria-label="Borrar ${esc(f.nombre)}">Borrar</button></div>
   </li>`).join('');
   ul.querySelectorAll('[data-abrir]').forEach((b) => b.addEventListener('click', () => {
-    const f = favs.find((x) => x.id === +b.dataset.abrir);
+    const f = favs.find((x) => String(x.id) === b.dataset.abrir);
     $('#dlg-favoritas').close();
+    if (f.paradas) { abrirRutaParadas(f); return; }
     S.salida = { p: f.A, etiqueta: 'Salida de la ruta guardada' };
     if (f.B && !f.circular) S.destino = { p: f.B, etiqueta: 'Destino de la ruta guardada' };
     S.elegidos = f.plan.map((x) => ({ t: x.t, rev: x.rev }));
@@ -729,11 +750,112 @@ async function pintarFavoritas() {
   }));
   ul.querySelectorAll('[data-borrar]').forEach((b) => b.addEventListener('click', async () => {
     if (b.dataset.confirmar !== '1') { b.dataset.confirmar = '1'; b.textContent = '¿Seguro?'; return; }
-    await D.idb.del('favoritas', +b.dataset.borrar);
+    const f = favs.find((x) => String(x.id) === b.dataset.borrar);
+    await D.idb.del('favoritas', f.id);
     pintarFavoritas();
   }));
 }
 $('#btn-favoritas').addEventListener('click', () => { pintarFavoritas(); $('#dlg-favoritas').showModal(); });
+
+// ---------- Rutas por paradas (p. ej. importadas de Google Maps) ----------
+const sinTilde = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+async function localizarParada(pa) {
+  if (pa.p) return pa.p;
+  if (pa.casa) {
+    const casa = D.ajustes().casa;
+    if (!casa) throw new Error('PEDIR_CASA');
+    return casa.p;
+  }
+  const clave = sinTilde(pa.contiene || pa.nombre);
+  for (const q of pa.buscar) {
+    const res = await D.buscarLugar(q, [40.45, -3.95]);
+    const ok = res.find((x) => sinTilde(x.etiqueta).includes(clave)) || null;
+    if (ok) return ok.p;
+  }
+  for (const q of pa.buscar) {
+    try {
+      const res = await D.buscarNominatim(q);
+      const ok = res.find((x) => sinTilde(x.etiqueta).includes(clave));
+      if (ok) return ok.p;
+    } catch {}
+  }
+  throw new Error(`No he encontrado "${pa.nombre}". Revisa el nombre de la parada.`);
+}
+
+// Punto de la ruta situado "metros" antes de llegar al índice idx (sin retroceder más allá de minIdx).
+function puntoAntes(coords, idx, metros, minIdx) {
+  let acum = 0;
+  for (let i = idx; i > minIdx; i--) {
+    acum += C.dist(coords[i - 1], coords[i]);
+    if (acum >= metros) return coords[i - 1];
+  }
+  return coords[Math.max(minIdx, Math.floor((minIdx + idx) / 2))];
+}
+
+async function calcularRutaParadas(f) {
+  estado('Localizando las paradas…');
+  const pts = [];
+  for (const pa of f.paradas) { pa.p = await localizarParada(pa); pts.push(pa.p); }
+  estado('Calculando el recorrido…');
+  const directa = await D.ruta(pts, { peajes: peajes() });
+  let via = pts;
+  if (f.sinEntrar && pts.length > 2) {
+    // Índice de cada parada dentro de la geometría
+    const wp = directa.wayPoints && directa.wayPoints.length === pts.length
+      ? directa.wayPoints
+      : pts.map((p) => { let b = 0, d = Infinity; directa.coords.forEach((c, i) => { const x = C.dist(c, p); if (x < d) { d = x; b = i; } }); return b; });
+    via = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const tramoM = directa.legs[i - 1]?.distance || 3000;
+      via.push(puntoAntes(directa.coords, wp[i], Math.min(1500, tramoM * 0.4), wp[i - 1]));
+    }
+    via.push(pts[pts.length - 1]);
+    estado('Ajustando para no entrar en los pueblos…');
+  }
+  const r = via === pts ? directa : await D.ruta(via, { peajes: peajes() });
+  estado('');
+  return { ...r, via, A: pts[0], B: pts[pts.length - 1], hayVuelta: false, circular: false, plan: [], marcas: [] };
+}
+
+async function abrirRutaParadas(f) {
+  S.elegidos = []; pintarListaTramos(); pintarSeleccion();
+  if (S.modo !== 'tramos') cambiarModo('tramos');
+  if (f.pendiente || !f.coords) {
+    try {
+      const r = await calcularRutaParadas(f);
+      Object.assign(f, r, { pendiente: false, fecha: f.fecha || new Date().toISOString() });
+      const guardar = { ...f, coords: C.simplificar(r.coords, 4) };
+      await D.idb.put('favoritas', guardar);
+    } catch (e) {
+      if (e.message === 'PEDIR_CASA') {
+        estado('Esta ruta termina en "Casa". Busca tu casa o usa tu ubicación; luego vuelve a abrir la ruta.', { dura: 9000 });
+        abrirBuscador('casa');
+      } else estado(e.message, { error: true, dura: 8000 });
+      return;
+    }
+  }
+  S.salida = { p: f.A, etiqueta: f.paradas[0].nombre };
+  mostrarResultado({ ...f, modo: 'tramos', favId: f.id, nombre: f.nombre, avisos: f.avisos || [
+    'Los pueblos intermedios se sustituyen por un punto unos 1,5 km antes de llegar, para no desviarte a su centro.',
+  ] });
+}
+
+// Las rutas precargadas se añaden a favoritas la primera vez.
+async function importarPrecargadas() {
+  try {
+    const r = await fetch('data/rutas-precargadas.json', { cache: 'no-store' });
+    if (!r.ok) return;
+    const lista = await r.json();
+    let hechas = [];
+    try { hechas = JSON.parse(localStorage.getItem('precargadas') || '[]'); } catch {}
+    for (const ruta of lista) {
+      if (hechas.includes(ruta.id)) continue;
+      await D.idb.put('favoritas', { ...ruta, pendiente: true, plan: [], fecha: new Date().toISOString() });
+      hechas.push(ruta.id);
+    }
+    try { localStorage.setItem('precargadas', JSON.stringify(hechas)); } catch {}
+  } catch { /* sin conexión: se intentará en otro momento */ }
+}
 
 // ---------- Ajustes ----------
 async function pintarDatos() {
@@ -749,6 +871,7 @@ $('#btn-ajustes').addEventListener('click', () => {
     ? `Tu salida habitual es ${a.habitual.etiqueta}. La app arranca allí y la pone como salida.`
     : 'Busca un lugar con la lupa y pulsa "Guardar como salida habitual" para que la app arranque allí.';
   $('#aj-quitar-habitual').hidden = !a.habitual;
+  $('#aj-casa').textContent = a.casa ? `Casa: ${a.casa.etiqueta}` : 'Aún no has indicado dónde está tu casa.';
   pintarDatos();
   $('#dlg-ajustes').showModal();
 });
@@ -765,6 +888,7 @@ $('#aj-guardar').addEventListener('click', () => {
   $('#dlg-ajustes').close();
   estado('Ajustes guardados.', { dura: 2500 });
 });
+$('#aj-cambiar-casa').addEventListener('click', () => { $('#dlg-ajustes').close(); abrirBuscador('casa'); });
 $('#aj-quitar-habitual').addEventListener('click', () => {
   const a = D.ajustes(); a.habitual = null; D.guardarAjustes(a);
   $('#aj-habitual').textContent = 'Has quitado la salida habitual.';
@@ -840,6 +964,7 @@ mapa.on('dragstart', () => {
   pintarCamposPunto();
   pintarListaTramos();
   await cargarGuardadas();
+  importarPrecargadas();
   revisarVista();
   if (!a.clave) estado('Para empezar, pega tu clave de OpenRouteService en Ajustes (rueda arriba a la derecha).', { dura: 9000 });
 })();

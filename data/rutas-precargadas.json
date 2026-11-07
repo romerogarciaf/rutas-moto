@@ -1,0 +1,17 @@
+[
+  {
+    "id": "pre-brunete-cebreros",
+    "nombre": "Brunete – Cebreros por Navalagamella",
+    "sinEntrar": true,
+    "paradas": [
+      { "nombre": "Brunete", "buscar": ["Brunete, 28690, Madrid", "Brunete, Madrid"] },
+      { "nombre": "Villanueva de la Cañada", "buscar": ["Villanueva de la Cañada, 28691, Madrid", "Villanueva de la Cañada"] },
+      { "nombre": "Quijorna", "buscar": ["Quijorna, 28693, Madrid", "Quijorna"] },
+      { "nombre": "Navalagamella", "buscar": ["Navalagamella, 28212, Madrid", "Navalagamella"] },
+      { "nombre": "Colmenar del Arroyo", "buscar": ["Colmenar del Arroyo, 28213, Madrid", "Colmenar del Arroyo"] },
+      { "nombre": "Palacio de El Quexigal", "buscar": ["Palacio de El Quexigal, Cebreros", "El Quexigal, Cebreros, Ávila", "Quexigal"], "contiene": "quexigal" },
+      { "nombre": "Cebreros", "buscar": ["Cebreros, 05260, Ávila", "Cebreros, Ávila"] },
+      { "nombre": "Casa", "casa": true }
+    ]
+  }
+]

@@ -189,12 +189,13 @@ export function simplificar(coords, tol) {
     const [s, e] = pila.pop();
     let max = 0, idx = -1;
     const [x1, y1] = xy[s], [x2, y2] = xy[e];
-    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy;
     for (let i = s + 1; i < e; i++) {
-      // Si el inicio y el final coinciden (ruta circular) se mide la distancia al punto inicial.
-      const d = L < 1e-6
-        ? Math.hypot(xy[i][0] - x1, xy[i][1] - y1)
-        : Math.abs(dy * xy[i][0] - dx * xy[i][1] + x2 * y1 - y2 * x1) / L;
+      // Distancia al segmento (no a la recta): así no se pierden idas y vueltas por la misma carretera
+      // ni las rutas circulares, cuyo inicio y final coinciden.
+      const [px, py] = xy[i];
+      const f = L2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / L2));
+      const d = Math.hypot(px - (x1 + f * dx), py - (y1 + f * dy));
       if (d > max) { max = d; idx = i; }
     }
     if (max > tol) { keep[idx] = 1; pila.push([s, idx], [idx, e]); }

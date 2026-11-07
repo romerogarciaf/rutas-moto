@@ -12,7 +12,7 @@ const ORS = 'https://api.heigit.org/openrouteservice';
 const PELIAS = 'https://api.heigit.org/pelias/v1';
 
 // ---------- Ajustes (en el propio iPhone) ----------
-const DEF = { clave: '', autonomia: 200, reserva: 30, peajes: true, habitual: null };
+const DEF = { clave: '', autonomia: 200, reserva: 30, peajes: true, habitual: null, casa: null };
 export function ajustes() {
   try { return { ...DEF, ...JSON.parse(localStorage.getItem('ajustes') || '{}') }; } catch { return { ...DEF }; }
 }
@@ -144,6 +144,7 @@ export async function ruta(puntos, { peajes = true } = {}) {
   const f = j.features[0];
   const legs = (f.properties.segments || []).map((s) => ({ distance: s.distance || 0, duration: s.duration || 0 }));
   return {
+    wayPoints: f.properties.way_points || null,
     coords: f.geometry.coordinates.map((c) => [c[1], c[0]]),
     distance: f.properties.summary.distance || 0,
     duration: f.properties.summary.duration || 0,
@@ -170,7 +171,11 @@ export async function buscarLugar(texto, cerca) {
       }
     } catch {}
   }
-  // Alternativa: Nominatim (OpenStreetMap)
+  return buscarNominatim(texto);
+}
+
+// Alternativa: Nominatim (OpenStreetMap)
+export async function buscarNominatim(texto) {
   const u = new URL('https://nominatim.openstreetmap.org/search');
   u.searchParams.set('format', 'jsonv2');
   u.searchParams.set('q', texto);
