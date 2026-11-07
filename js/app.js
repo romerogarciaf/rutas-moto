@@ -1,5 +1,5 @@
-import * as C from './curvas.js';
-import * as D from './datos.js';
+import * as C from './curvas.js?v=6';
+import * as D from './datos.js?v=6';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -468,6 +468,35 @@ $$('.pestanas button').forEach((b) => b.addEventListener('click', () => cambiarM
     el.addEventListener('click', (e) => { if (ignorarClic) { e.stopPropagation(); e.preventDefault(); } }, true);
   }
   $('#asa').addEventListener('click', () => { if (!ignorarClic) panel.classList.toggle('plegado'); });
+
+  // Arrastrar hacia abajo desde cualquier parte del contenido, cuando ya está arriba del todo.
+  const cuerpo = $('.panel-cuerpo');
+  let t0 = null;
+  cuerpo.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || panel.classList.contains('plegado')) { t0 = null; return; }
+    t0 = { y: e.touches[0].clientY, arriba: cuerpo.scrollTop <= 0, mov: false };
+  }, { passive: true });
+  cuerpo.addEventListener('touchmove', (e) => {
+    if (!t0 || !t0.arriba) return;
+    const dy = e.touches[0].clientY - t0.y;
+    if (!t0.mov && (dy < 8 || cuerpo.scrollTop > 0)) { if (dy < 0) t0 = null; return; }
+    t0.mov = true;
+    e.preventDefault();
+    panel.classList.add('arrastrando');
+    panel.style.transform = `translateY(${Math.min(maxBajada(), dy)}px)`;
+  }, { passive: false });
+  const finToque = (e) => {
+    if (!t0) return;
+    if (t0.mov) {
+      const dy = (e.changedTouches[0]?.clientY ?? t0.y) - t0.y;
+      panel.classList.remove('arrastrando');
+      panel.style.transform = '';
+      panel.classList.toggle('plegado', dy > 60);
+    }
+    t0 = null;
+  };
+  cuerpo.addEventListener('touchend', finToque);
+  cuerpo.addEventListener('touchcancel', finToque);
   // Al tocar una pestaña con el panel plegado, se despliega.
   $('.pestanas').addEventListener('click', () => { if (!ignorarClic) panel.classList.remove('plegado'); });
 })();

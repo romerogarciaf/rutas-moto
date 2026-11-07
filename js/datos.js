@@ -1,5 +1,5 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass } from './curvas.js';
+import { procesarOverpass } from './curvas.js?v=6';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
