@@ -218,6 +218,19 @@ input[type="radio"], input[type="checkbox"] { width: 20px; height: 20px; accent-
 .vacio { color: var(--suave); text-align: center; padding: 18px 0; }
 .creditos { font-size: 12px; color: var(--suave); margin: 4px 0 0; }
 
+/* Mapa base suavizado para que destaquen las curvas */
+.mapa-base { filter: saturate(.45) brightness(1.04) contrast(.92); }
+.zona {
+  width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center;
+  border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); cursor: pointer;
+  font: 700 16px/1 var(--f-titulo); color: #fff;
+}
+.zona svg { width: 70%; height: 70%; }
+.zona.n1 { background: #d9a900; } .zona.n2 { background: var(--naranja); } .zona.n3 { background: var(--rojo); }
+.zona.grupo { box-shadow: 0 0 0 5px rgba(214,49,43,.18), 0 2px 6px rgba(0,0,0,.35); }
+.zona.grupo.n1 { box-shadow: 0 0 0 5px rgba(242,194,0,.25), 0 2px 6px rgba(0,0,0,.35); }
+.zona.grupo.n2 { box-shadow: 0 0 0 5px rgba(240,124,18,.22), 0 2px 6px rgba(0,0,0,.35); }
+
 /* Leaflet */
 .leaflet-container { font: 14px/1.4 var(--f-texto); }
 .leaflet-popup-content-wrapper { border-radius: 12px; background: var(--panel); color: var(--texto); }

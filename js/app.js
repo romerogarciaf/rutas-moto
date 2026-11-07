@@ -57,9 +57,12 @@ const mapa = L.map('mapa', { zoomControl: false, attributionControl: true }).set
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  className: 'mapa-base',
 }).addTo(mapa);
 const lienzoTramos = L.canvas({ tolerance: 12 });
+const capaHalo = L.layerGroup().addTo(mapa);
 const capaTramos = L.layerGroup().addTo(mapa);
+const capaZonas = L.layerGroup().addTo(mapa);
 const capaSeleccion = L.layerGroup().addTo(mapa);
 const capaRuta = L.layerGroup().addTo(mapa);
 const capaGas = L.layerGroup().addTo(mapa);
@@ -67,7 +70,9 @@ const capaPines = L.layerGroup().addTo(mapa);
 
 function dibujarTramo(t) {
   if (S.capas.has(t.id)) return;
-  const pl = L.polyline(t.coords, { renderer: lienzoTramos, color: COLOR[t.lvl], weight: 6, opacity: 0.9, lineCap: 'round' });
+  // Halo ancho y translúcido debajo, línea fina encima: la curva queda resaltada sobre la carretera.
+  L.polyline(t.coords, { renderer: lienzoTramos, color: COLOR[t.lvl], weight: 13, opacity: 0.28, lineCap: 'round', interactive: false }).addTo(capaHalo);
+  const pl = L.polyline(t.coords, { renderer: lienzoTramos, color: COLOR[t.lvl], weight: 4.5, opacity: 1, lineCap: 'round' });
   pl.on('click', (e) => {
     L.DomEvent.stop(e);
     if (S.eligiendo) return fijarDesdeMapa(e.latlng);
@@ -88,7 +93,58 @@ function anadirTramos(lista) {
     S.tramos.set(t.id, t);
     dibujarTramo(t);
   }
+  programarZonas();
 }
+
+// ---------- Iconos de zonas de curvas (agrupados al alejar el mapa) ----------
+const GLIFO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20c0-3.5 3-4 5.5-5.2S17 12 17 9.5 15 6 12.5 6 9 7 9 8.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+let tZonas;
+function programarZonas() { clearTimeout(tZonas); tZonas = setTimeout(pintarZonas, 250); }
+function pintarZonas() {
+  capaZonas.clearLayers();
+  const z = mapa.getZoom();
+  if (z >= 13) return;
+  const b = mapa.getBounds();
+  const s = b.getSouth(), n = b.getNorth(), w = b.getWest(), e = b.getEast();
+  const celda = 64; // píxeles por grupo
+  const grupos = new Map();
+  for (const t of S.tramos.values()) {
+    const c = C.centro(t.coords);
+    if (c[0] < s || c[0] > n || c[1] < w || c[1] > e) continue;
+    const p = mapa.latLngToContainerPoint(c);
+    const k = `${Math.floor(p.x / celda)}:${Math.floor(p.y / celda)}`;
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(t);
+  }
+  for (const lista of grupos.values()) {
+    const lvl = Math.max(...lista.map((t) => t.lvl));
+    const lat = lista.reduce((a, t) => a + C.centro(t.coords)[0], 0) / lista.length;
+    const lon = lista.reduce((a, t) => a + C.centro(t.coords)[1], 0) / lista.length;
+    const uno = lista.length === 1;
+    const html = uno
+      ? `<div class="zona n${lvl}">${GLIFO}</div>`
+      : `<div class="zona grupo n${lvl}">${lista.length}</div>`;
+    const tam = uno ? 30 : 36;
+    const m = L.marker(uno ? C.centro(lista[0].coords) : [lat, lon], {
+      icon: L.divIcon({ className: '', html, iconSize: [tam, tam], iconAnchor: [tam / 2, tam / 2] }),
+      keyboard: false,
+      title: uno ? nombreTramo(lista[0]) : `${lista.length} tramos de curvas`,
+    });
+    m.on('click', () => {
+      if (S.eligiendo) return fijarDesdeMapa(m.getLatLng());
+      if (uno) {
+        const t = lista[0], c = C.centro(t.coords);
+        mapa.setView(c, Math.max(z, 12));
+        abrirTramo(t, c);
+      } else {
+        const pts = lista.flatMap((t) => [t.coords[0], t.coords[t.coords.length - 1]]);
+        mapa.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 13 });
+      }
+    });
+    m.addTo(capaZonas);
+  }
+}
+mapa.on('zoomend moveend', programarZonas);
 
 // ---------- Carga de curvas por celdas ----------
 async function cargarGuardadas() {
@@ -734,7 +790,7 @@ $('#aj-borrar').addEventListener('click', async (e) => {
   if (b.dataset.confirmar !== '1') { b.dataset.confirmar = '1'; b.textContent = 'Pulsa otra vez para borrar'; return; }
   b.dataset.confirmar = ''; b.textContent = 'Borrar datos guardados';
   await D.idb.clear('celdas');
-  S.celdas.clear(); S.tramos.clear(); S.capas.clear(); S.fallidas.clear(); capaTramos.clearLayers();
+  S.celdas.clear(); S.tramos.clear(); S.capas.clear(); S.fallidas.clear(); capaTramos.clearLayers(); capaHalo.clearLayers(); capaZonas.clearLayers();
   pintarDatos();
   revisarVista();
 });
