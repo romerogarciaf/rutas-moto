@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<link rel="stylesheet" href="css/app.css?v=6">
+<link rel="stylesheet" href="css/app.css?v=7">
 </head>
 <body>
 <header class="barra">
@@ -120,6 +120,19 @@
       </div>
     </div>
 
+    <!-- Editar una ruta -->
+    <div class="modo" data-modo="editar" hidden>
+      <div class="cab-edicion">
+        <h3>Editar ruta</h3>
+        <button class="sec" id="ed-cancelar">Cancelar</button>
+      </div>
+      <input id="ed-nombre" type="text" aria-label="Nombre de la ruta">
+      <p class="ayuda">Quita o reordena paradas y tramos con los botones. Para añadir, pulsa «Añadir parada aquí» o toca un tramo de color en el mapa.</p>
+      <ol id="lista-edicion" class="lista-edicion"></ol>
+      <label class="interruptor"><input type="checkbox" id="ed-sin-entrar"> <span>No entrar en los pueblos de las paradas intermedias</span></label>
+      <button class="pri" id="ed-guardar">Recalcular y guardar</button>
+    </div>
+
     <label class="interruptor"><input type="checkbox" id="peajes"> <span>Evitar peajes</span></label>
 
     <!-- Resultado -->
@@ -182,11 +195,11 @@
     </div>
     <p id="aj-datos" class="nota"></p>
     <button class="pri ancho" id="aj-guardar">Guardar ajustes</button>
-    <p class="creditos">Versión 6. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT).</p>
+    <p class="creditos">Versión 7. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
   </div>
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script type="module" src="js/app.js?v=6"></script>
+<script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>

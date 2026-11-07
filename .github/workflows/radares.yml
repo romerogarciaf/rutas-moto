@@ -1,0 +1,37 @@
+name: Actualizar radares DGT
+on:
+  schedule:
+    - cron: '17 5 * * 1'   # cada lunes
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  radares:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar inventario oficial de la DGT
+        run: |
+          curl -fsSL --retry 3 --max-time 120 -A "rutas-moto (uso personal)" \
+            -o /tmp/radares.xml \
+            http://infocar.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml
+      - name: Convertir a JSON
+        run: python3 scripts/radares.py /tmp/radares.xml data/radares.json
+      - name: Guardar si ha cambiado
+        run: |
+          if git diff --quiet -- data/radares.json; then echo "Sin cambios"; exit 0; fi
+          python3 - <<'PY'
+          import json, subprocess
+          nuevo = json.load(open('data/radares.json'))
+          viejo = json.loads(subprocess.run(['git', 'show', 'HEAD:data/radares.json'], capture_output=True, text=True).stdout or '{}')
+          # Solo se guarda si cambian los radares, no la hora de conversión
+          if nuevo.get('radares') == viejo.get('radares'):
+              subprocess.run(['git', 'checkout', '--', 'data/radares.json'])
+          PY
+          if git diff --quiet -- data/radares.json; then echo "Sin cambios en los radares"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          git add data/radares.json
+          git commit -m "Actualiza radares de la DGT"
+          git push

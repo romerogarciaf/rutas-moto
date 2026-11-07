@@ -169,6 +169,30 @@ input[type="radio"], input[type="checkbox"] { width: 20px; height: 20px; accent-
 .lista-tramos .nom { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 .lista-tramos .dat { font: 600 15px/1 var(--f-titulo); color: var(--suave); font-variant-numeric: tabular-nums; }
 
+/* Edición de rutas */
+.cab-edicion { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cab-edicion h3 { margin: 0; }
+.cab-edicion .sec { min-height: 38px; padding: 6px 12px; font-size: 15px; }
+.lista-edicion { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lista-edicion .el {
+  display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+  padding: 8px 8px 8px 10px; border-radius: 10px; background: var(--fondo);
+}
+.lista-edicion .ico { width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; font: 700 14px/1 var(--f-titulo); color: #fff; background: #5d666b; }
+.lista-edicion .ico.salida { background: #2f8a4c; } .lista-edicion .ico.llegada { background: #1b1f22; }
+.lista-edicion .ico.tramo { color: #1b1f22; }
+.lista-edicion .txt { min-width: 0; }
+.lista-edicion .txt b { display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lista-edicion .txt small { color: var(--suave); font-size: 13px; }
+.lista-edicion .acc { display: flex; gap: 2px; }
+.lista-edicion .acc button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--linea); background: var(--panel); cursor: pointer; font-size: 16px; display: grid; place-items: center; }
+.lista-edicion .acc button:disabled { opacity: .3; }
+.lista-edicion .acc .cambiar-el { width: auto; padding: 0 10px; font: 700 13px/1 var(--f-titulo); text-transform: uppercase; color: var(--acento); }
+.lista-edicion .insertar { background: none; border: 0; color: var(--acento); font: 600 14px/1 var(--f-titulo); text-transform: uppercase; letter-spacing: .04em; padding: 6px 0 6px 48px; text-align: left; cursor: pointer; }
+.radar-mapa { width: 20px; height: 20px; border-radius: 5px; background: #fff; border: 2px solid var(--rojo); display: grid; place-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.radar-mapa svg { width: 12px; height: 12px; }
+.radar-mapa.tramo { border-color: #7a3db8; }
+
 /* Resultado */
 .resultado { border-top: 1px solid var(--linea); padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .totales { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
