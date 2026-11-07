@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=7';
-import * as D from './datos.js?v=7';
+import * as C from './curvas.js?v=8';
+import * as D from './datos.js?v=8';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -291,6 +291,9 @@ function pintarListaTramos() {
 
 // ---------- Puntos de salida y destino ----------
 function pintarCamposPunto() {
+  const casa = D.ajustes().casa;
+  const etq = $('#fin-casa-nombre');
+  if (etq) etq.textContent = casa ? `(${casa.etiqueta})` : '(aún sin indicar)';
   $$('.campo-punto').forEach((el) => {
     const tipo = el.dataset.punto;
     const v = S[tipo];
@@ -301,6 +304,9 @@ function pintarCamposPunto() {
     el.setAttribute('role', 'button');
   });
   capaPines.clearLayers();
+  if (casa && S.modo === 'tramos' && finElegido() === 'casa') {
+    L.marker(casa.p, { title: 'Casa', icon: L.divIcon({ className: '', html: '<div class="pin-mapa destino">⌂</div>', iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(capaPines);
+  }
   for (const tipo of ['salida', 'destino']) {
     if (!S[tipo]) continue;
     if (tipo === 'destino' && S.modo === 'circular') continue;
@@ -311,7 +317,8 @@ function pintarCamposPunto() {
 function fijarPunto(tipo, p, etiqueta) {
   if (tipo === 'casa') {
     const a = D.ajustes(); a.casa = { p, etiqueta }; D.guardarAjustes(a);
-    estado(`Casa guardada: ${etiqueta}. Vuelve a abrir la ruta desde la estrella.`, { dura: 6000 });
+    estado(`Casa guardada: ${etiqueta}.`, { dura: 5000 });
+    pintarCamposPunto();
     return;
   }
   if (tipo === 'insertar' && S.edicion) { insertarEnEdicion({ tipo: 'punto', nombre: etiqueta, p }); return; }
@@ -565,13 +572,21 @@ $('#btn-calcular-tramos').addEventListener('click', (e) => ocupado(e.currentTarg
   const fin = finElegido();
   if (fin === 'destino' && !S.destino) throw new Error('Elige el destino.');
   const A = S.salida.p;
-  const B = fin === 'salida' ? A : fin === 'destino' ? S.destino.p : null;
+  let B = fin === 'salida' ? A : fin === 'destino' ? S.destino.p : null;
+  if (fin === 'casa') {
+    const casa = D.ajustes().casa;
+    if (!casa) {
+      abrirBuscador('casa');
+      throw new Error('Indica primero dónde está tu casa (búscala o usa tu ubicación) y vuelve a pulsar Calcular ruta.');
+    }
+    B = casa.p;
+  }
   const plan = S.elegidos.slice();
   const { pts, marcas } = C.puntosDePaso(A, B, plan);
   estado('Calculando la ruta…');
   const r = await D.ruta(pts, { peajes: peajes() });
   estado('');
-  mostrarResultado({ modo: 'tramos', A, B, circular: fin === 'salida', hayVuelta: !!B, plan, marcas, ...r, avisos: [] });
+  mostrarResultado({ modo: 'tramos', A, B, circular: fin === 'salida', vueltaCasa: fin === 'casa', hayVuelta: !!B, plan, marcas, ...r, avisos: [] });
 }));
 
 // Diseño automático con recalibración contra el tiempo real que da el calculador.
@@ -674,7 +689,7 @@ function mostrarResultado(r) {
   const kmCurvas = r.plan.reduce((s, p) => s + p.t.km, 0);
   const total = r.duration || 1;
   const pc = (x) => `${Math.max(0, (x / total) * 100).toFixed(1)}%`;
-  const etiquetaVuelta = r.circular ? 'Vuelta a la salida' : 'Hasta el destino';
+  const etiquetaVuelta = r.circular ? 'Vuelta a la salida' : r.vueltaCasa ? 'Vuelta a casa' : 'Hasta el destino';
   const minRevirados = Math.round(r.plan.reduce((s, p) => s + C.horasTramo(p.t), 0) * 60);
   const filas = [
     ['r-ida', 'Ida hasta las curvas', rep.ida],
@@ -823,7 +838,7 @@ async function pintarFavoritas() {
     S.salida = { p: f.A, etiqueta: 'Salida de la ruta guardada' };
     if (f.B && !f.circular) S.destino = { p: f.B, etiqueta: 'Destino de la ruta guardada' };
     S.elegidos = f.plan.map((x) => ({ t: x.t, rev: x.rev }));
-    const fin = f.circular ? 'salida' : f.B ? 'destino' : 'nada';
+    const fin = f.circular ? 'salida' : f.vueltaCasa ? 'casa' : f.B ? 'destino' : 'nada';
     $(`input[name="fin"][value="${fin}"]`).checked = true;
     $('.modo[data-modo="tramos"] .campo-punto[data-punto="destino"]').hidden = fin !== 'destino';
     cambiarModo('tramos');
@@ -890,7 +905,7 @@ function elementosDeFav(f) {
   if (f.paradas) return { elems: f.paradas.map((pa) => ({ tipo: 'punto', ...structuredClone(pa) })), sinEntrar: !!f.sinEntrar };
   const elems = [{ tipo: 'punto', nombre: 'Salida', p: f.A }];
   for (const x of f.plan || []) elems.push({ tipo: 'tramo', t: compactarTramo(x.t), rev: x.rev });
-  if (f.B) elems.push({ tipo: 'punto', nombre: f.circular ? 'Vuelta a la salida' : 'Destino', p: f.B });
+  if (f.B) elems.push({ tipo: 'punto', nombre: f.circular ? 'Vuelta a la salida' : f.vueltaCasa ? 'Casa' : 'Destino', p: f.B });
   return { elems, sinEntrar: false };
 }
 
@@ -996,7 +1011,7 @@ async function abrirRutaElementos(f) {
 function favDesde(r, nombre, id) {
   return {
     id: id || Date.now(), nombre, fecha: new Date().toISOString(),
-    modo: r.modo, A: r.A, B: r.B, circular: !!r.circular, hayVuelta: r.hayVuelta,
+    modo: r.modo, A: r.A, B: r.B, circular: !!r.circular, vueltaCasa: !!r.vueltaCasa, hayVuelta: r.hayVuelta,
     plan: r.plan.map(({ t, rev }) => ({ t: compactarTramo(t), rev })),
     marcas: r.marcas, legs: r.legs, distance: r.distance, duration: r.duration,
     coords: C.simplificar(r.coords, 4), avisos: r.avisos || (r.sinEntrar ? [AVISO_SIN_ENTRAR] : []),

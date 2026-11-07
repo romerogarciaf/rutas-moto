@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<link rel="stylesheet" href="css/app.css?v=7">
+<link rel="stylesheet" href="css/app.css?v=8">
 </head>
 <body>
 <header class="barra">
@@ -73,6 +73,7 @@
       <fieldset class="opciones">
         <legend>Al terminar el último tramo</legend>
         <label><input type="radio" name="fin" value="salida" checked> Volver a la salida</label>
+        <label><input type="radio" name="fin" value="casa"> Volver a casa <small id="fin-casa-nombre" class="nota"></small></label>
         <label><input type="radio" name="fin" value="destino"> Ir a otro destino</label>
         <label><input type="radio" name="fin" value="nada"> Terminar ahí</label>
       </fieldset>
@@ -195,11 +196,11 @@
     </div>
     <p id="aj-datos" class="nota"></p>
     <button class="pri ancho" id="aj-guardar">Guardar ajustes</button>
-    <p class="creditos">Versión 7. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
+    <p class="creditos">Versión 8. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
   </div>
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script type="module" src="js/app.js?v=7"></script>
+<script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>
