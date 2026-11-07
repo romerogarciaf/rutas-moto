@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Rutas de Curvas</title>
+<meta name="description" content="Diseña rutas en moto por carreteras de curvas.">
+<meta name="theme-color" content="#1b1f22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Curvas">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="barra">
+  <div class="marca">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 27c0-6 5-7 9-9s7-4 7-8-3-5-6-5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="16" cy="5" r="2.4" fill="var(--rojo)"/></svg>
+    <span>Rutas de Curvas</span>
+  </div>
+  <nav class="barra-acciones">
+    <button id="btn-favoritas" class="icono" aria-label="Rutas favoritas" title="Rutas favoritas">
+      <svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="btn-ajustes" class="icono" aria-label="Ajustes" title="Ajustes">
+      <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main id="mapa" aria-label="Mapa"></main>
+
+<div class="flotantes">
+  <div class="leyenda" aria-label="Leyenda">
+    <span><i class="c1"></i>Curvas</span>
+    <span><i class="c2"></i>Muchas</span>
+    <span><i class="c3"></i>Revirado</span>
+  </div>
+  <div id="estado" class="estado" hidden></div>
+</div>
+<button id="btn-posicion" class="btn-posicion" aria-label="Mostrar mi posición" title="Mostrar mi posición">
+  <svg viewBox="0 0 24 24"><path d="M12 2.5l7 18-7-4-7 4z" fill="currentColor"/></svg>
+</button>
+
+<section id="panel" class="panel" aria-label="Diseñar ruta">
+  <button id="asa" class="asa" aria-label="Mostrar u ocultar el panel"><span></span></button>
+  <div class="pestanas" role="tablist">
+    <button role="tab" data-modo="tramos" aria-selected="true">Tramos</button>
+    <button role="tab" data-modo="ab" aria-selected="false">A → B</button>
+    <button role="tab" data-modo="circular" aria-selected="false">Circular</button>
+  </div>
+  <div class="panel-cuerpo">
+
+    <!-- Tramo a tramo -->
+    <div class="modo" data-modo="tramos">
+      <div class="campo-punto" data-punto="salida"></div>
+      <p class="ayuda">Toca los tramos de color en el mapa para añadirlos a la ruta, en el orden en que quieras recorrerlos.</p>
+      <ol id="lista-tramos" class="lista-tramos"></ol>
+      <div class="fila" id="acciones-tramos" hidden>
+        <button class="sec" id="btn-quitar">Quitar el último</button>
+        <button class="sec" id="btn-vaciar">Vaciar</button>
+      </div>
+      <fieldset class="opciones">
+        <legend>Al terminar el último tramo</legend>
+        <label><input type="radio" name="fin" value="salida" checked> Volver a la salida</label>
+        <label><input type="radio" name="fin" value="destino"> Ir a otro destino</label>
+        <label><input type="radio" name="fin" value="nada"> Terminar ahí</label>
+      </fieldset>
+      <div class="campo-punto" data-punto="destino" hidden></div>
+      <button class="pri" id="btn-calcular-tramos">Calcular ruta</button>
+    </div>
+
+    <!-- De A a B -->
+    <div class="modo" data-modo="ab" hidden>
+      <div class="campo-punto" data-punto="salida"></div>
+      <div class="campo-punto" data-punto="destino"></div>
+      <label class="etiqueta" for="ab-criterio">Criterio</label>
+      <select id="ab-criterio">
+        <option value="max">El máximo de curvas</option>
+        <option value="extra" selected>Tiempo extra máximo sobre la ruta rápida</option>
+        <option value="total">Tiempo total máximo</option>
+      </select>
+      <div class="fila-valor" id="ab-extra"><input id="ab-extra-v" type="number" inputmode="numeric" min="10" max="300" step="10" value="60"><span>% más de tiempo</span></div>
+      <div class="fila-valor" id="ab-total" hidden><input id="ab-total-v" type="number" inputmode="decimal" min="0.5" max="12" step="0.25" value="3"><span>horas en total</span></div>
+      <div class="fila">
+        <button class="pri" id="btn-ab">Diseñar ruta</button>
+        <button class="sec" id="btn-ab-otra" disabled>Otra variante</button>
+      </div>
+    </div>
+
+    <!-- Circular -->
+    <div class="modo" data-modo="circular" hidden>
+      <div class="campo-punto" data-punto="salida"></div>
+      <label class="etiqueta" for="ci-tipo">Limitar por</label>
+      <div class="segmentado" id="ci-tipo" role="radiogroup">
+        <label><input type="radio" name="ci-tipo" value="h" checked><span>Tiempo</span></label>
+        <label><input type="radio" name="ci-tipo" value="km"><span>Distancia</span></label>
+      </div>
+      <div class="fila-valor" id="ci-h"><input id="ci-h-v" type="number" inputmode="decimal" min="1" max="10" step="0.5" value="3"><span>horas en total, incluido ir y volver</span></div>
+      <div class="fila-valor" id="ci-km" hidden><input id="ci-km-v" type="number" inputmode="numeric" min="50" max="600" step="10" value="200"><span>km en total</span></div>
+      <label class="etiqueta" for="ci-rumbo">Hacia dónde</label>
+      <select id="ci-rumbo">
+        <option value="">Cualquier dirección</option>
+        <option value="0">Norte</option><option value="45">Noreste</option><option value="90">Este</option><option value="135">Sureste</option>
+        <option value="180">Sur</option><option value="225">Suroeste</option><option value="270">Oeste</option><option value="315">Noroeste</option>
+      </select>
+      <div class="fila">
+        <button class="pri" id="btn-ci">Diseñar ruta</button>
+        <button class="sec" id="btn-ci-otra" disabled>Otra variante</button>
+      </div>
+    </div>
+
+    <label class="interruptor"><input type="checkbox" id="peajes"> <span>Evitar peajes</span></label>
+
+    <!-- Resultado -->
+    <div id="resultado" class="resultado" hidden></div>
+  </div>
+</section>
+
+<!-- Elegir punto -->
+<dialog id="dlg-punto" class="dialogo">
+  <form method="dialog" class="dlg-cab"><h2 id="dlg-punto-titulo">Salida</h2><button class="icono" aria-label="Cerrar">✕</button></form>
+  <div class="dlg-cuerpo">
+    <button class="sec ancho" id="pt-ubicacion">Usar mi ubicación actual</button>
+    <button class="sec ancho" id="pt-mapa">Elegir tocando en el mapa</button>
+    <form id="pt-form" class="buscador">
+      <input id="pt-texto" type="search" placeholder="Buscar un lugar, p. ej. Rascafría" autocomplete="off">
+      <button class="pri">Buscar</button>
+    </form>
+    <ul id="pt-resultados" class="resultados-busqueda"></ul>
+  </div>
+</dialog>
+
+<!-- Favoritas -->
+<dialog id="dlg-favoritas" class="dialogo">
+  <form method="dialog" class="dlg-cab"><h2>Rutas favoritas</h2><button class="icono" aria-label="Cerrar">✕</button></form>
+  <div class="dlg-cuerpo"><ul id="lista-favoritas" class="lista-favoritas"></ul></div>
+</dialog>
+
+<!-- Ajustes -->
+<dialog id="dlg-ajustes" class="dialogo">
+  <form method="dialog" class="dlg-cab"><h2>Ajustes</h2><button class="icono" aria-label="Cerrar">✕</button></form>
+  <div class="dlg-cuerpo">
+    <label class="etiqueta" for="aj-clave">Clave de OpenRouteService</label>
+    <input id="aj-clave" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pega aquí tu Basic Key">
+    <p class="nota">Se guarda solo en este iPhone. La necesita la app para calcular rutas.</p>
+
+    <div class="dos">
+      <div><label class="etiqueta" for="aj-autonomia">Autonomía con el depósito lleno</label>
+        <div class="fila-valor"><input id="aj-autonomia" type="number" inputmode="numeric" min="50" max="800" step="5"><span>km</span></div></div>
+      <div><label class="etiqueta" for="aj-reserva">Margen de seguridad</label>
+        <div class="fila-valor"><input id="aj-reserva" type="number" inputmode="numeric" min="0" max="200" step="5"><span>km</span></div></div>
+    </div>
+    <p class="nota">La app avisa si en algún punto de la ruta hay más distancia entre gasolineras que tu autonomía menos el margen. Supone que sales con el depósito lleno.</p>
+
+    <label class="interruptor"><input type="checkbox" id="aj-peajes"> <span>Evitar peajes por defecto</span></label>
+
+    <h3>Datos de carreteras</h3>
+    <p class="nota">Las curvas se calculan con datos de OpenStreetMap y se guardan en el iPhone. Descargar Madrid y alrededores de una vez agiliza las rutas largas (tarda unos minutos).</p>
+    <div class="fila">
+      <button class="sec" id="aj-descargar">Descargar Madrid y alrededores</button>
+      <button class="sec" id="aj-borrar">Borrar datos guardados</button>
+    </div>
+    <p id="aj-datos" class="nota"></p>
+    <button class="pri ancho" id="aj-guardar">Guardar ajustes</button>
+    <p class="creditos">Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT).</p>
+  </div>
+</dialog>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
