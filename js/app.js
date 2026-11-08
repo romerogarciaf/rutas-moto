@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=8';
-import * as D from './datos.js?v=8';
+import * as C from './curvas.js?v=9';
+import * as D from './datos.js?v=9';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -342,6 +342,10 @@ function abrirBuscador(modo) {
   $('#dlg-punto-titulo').textContent = { salida: 'Salida', destino: 'Destino', casa: 'Tu casa', insertar: 'Añadir parada', 'cambiar-el': 'Cambiar punto' }[modo] || 'Buscar lugar';
   $('#pt-ubicacion').hidden = modo === 'ir';
   $('#pt-mapa').hidden = modo === 'ir' || modo === 'casa';
+  const casa = D.ajustes().casa;
+  const conCasa = casa && ['salida', 'destino', 'insertar', 'cambiar-el'].includes(modo);
+  $('#pt-casa').hidden = !conCasa;
+  if (conCasa) $('#pt-casa').textContent = modo === 'salida' ? `Salir desde casa (${casa.etiqueta})` : `Mi casa (${casa.etiqueta})`;
   const hab = D.ajustes().habitual;
   $('#pt-habitual').hidden = !hab || modo === 'ir' || modo === 'casa' || modo === 'insertar';
   if (hab) $('#pt-habitual').textContent = `Usar mi salida habitual: ${hab.etiqueta}`;
@@ -351,7 +355,18 @@ function abrirBuscador(modo) {
   setTimeout(() => $('#pt-texto').focus(), 50);
 }
 $('#btn-buscar').addEventListener('click', () => abrirBuscador('ir'));
+$('#pt-casa').addEventListener('click', () => {
+  const casa = D.ajustes().casa;
+  $('#dlg-punto').close();
+  if (!casa) return;
+  fijarPunto(puntoEditando, casa.p, 'Casa');
+  if (puntoEditando === 'salida' || puntoEditando === 'destino') mapa.setView(casa.p, Math.max(mapa.getZoom(), 11));
+});
 $('#pt-habitual').addEventListener('click', () => {
+  const casa = D.ajustes().casa;
+  const conCasa = casa && ['salida', 'destino', 'insertar', 'cambiar-el'].includes(modo);
+  $('#pt-casa').hidden = !conCasa;
+  if (conCasa) $('#pt-casa').textContent = modo === 'salida' ? `Salir desde casa (${casa.etiqueta})` : `Mi casa (${casa.etiqueta})`;
   const hab = D.ajustes().habitual;
   $('#dlg-punto').close();
   if (!hab) return;

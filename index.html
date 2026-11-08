@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<link rel="stylesheet" href="css/app.css?v=8">
+<link rel="stylesheet" href="css/app.css?v=9">
 </head>
 <body>
 <header class="barra">
@@ -145,6 +145,7 @@
 <dialog id="dlg-punto" class="dialogo">
   <form method="dialog" class="dlg-cab"><h2 id="dlg-punto-titulo">Salida</h2><button class="icono" aria-label="Cerrar">✕</button></form>
   <div class="dlg-cuerpo">
+    <button class="sec ancho" id="pt-casa" hidden>Desde casa</button>
     <button class="sec ancho" id="pt-habitual" hidden>Usar mi salida habitual</button>
     <button class="sec ancho" id="pt-ubicacion">Usar mi ubicación actual</button>
     <button class="sec ancho" id="pt-mapa">Elegir tocando en el mapa</button>
@@ -196,11 +197,11 @@
     </div>
     <p id="aj-datos" class="nota"></p>
     <button class="pri ancho" id="aj-guardar">Guardar ajustes</button>
-    <p class="creditos">Versión 8. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
+    <p class="creditos">Versión 9. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
   </div>
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script type="module" src="js/app.js?v=8"></script>
+<script type="module" src="js/app.js?v=9"></script>
 </body>
 </html>
