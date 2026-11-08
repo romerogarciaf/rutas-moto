@@ -12,13 +12,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Descargar inventario oficial de la DGT
+        id: descarga
         run: |
-          curl -fsSL --retry 3 --max-time 120 -A "rutas-moto (uso personal)" \
-            -o /tmp/radares.xml \
-            http://infocar.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml
+          ok=0
+          for url in \
+            http://infocar.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml \
+            https://infocar.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml ; do
+            for intento in 1 2 3; do
+              codigo=$(curl -sS -L --max-time 120 -A "Mozilla/5.0 (rutas-moto, uso personal)" -o /tmp/radares.xml -w '%{http_code}' "$url" || echo 000)
+              echo "$url intento $intento: HTTP $codigo"
+              if [ "$codigo" = "200" ] && grep -q "predefinedLocation" /tmp/radares.xml; then ok=1; break 2; fi
+              sleep 20
+            done
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+          if [ "$ok" != "1" ]; then
+            echo "::warning::El servidor de la DGT no ha respondido. Se mantienen los radares que ya había."
+          fi
       - name: Convertir a JSON
+        if: steps.descarga.outputs.ok == '1'
         run: python3 scripts/radares.py /tmp/radares.xml data/radares.json
       - name: Guardar si ha cambiado
+        if: steps.descarga.outputs.ok == '1'
         run: |
           if git diff --quiet -- data/radares.json; then echo "Sin cambios"; exit 0; fi
           python3 - <<'PY'
