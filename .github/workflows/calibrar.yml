@@ -1,6 +1,8 @@
 name: Calibrar curvas
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   calibrar:
     runs-on: ubuntu-latest
@@ -16,7 +18,15 @@ jobs:
         run: |
           pip install --quiet matplotlib
           python3 scripts/calibrar_mapas.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: calibracion
-          path: calibracion/
+      - name: Guardar resultados en la rama calibracion
+        run: |
+          cp -r calibracion /tmp/cal
+          git config user.name "github-actions[bot]"
+          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan calibracion
+          git rm -rq --cached .
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/cal/* .
+          git add -A
+          git commit -qm "Resultados de calibración"
+          git push -f origin calibracion
