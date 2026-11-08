@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=13';
-import * as D from './datos.js?v=13';
+import * as C from './curvas.js?v=14';
+import * as D from './datos.js?v=14';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];

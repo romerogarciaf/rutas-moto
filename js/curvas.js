@@ -17,7 +17,7 @@ export const CFG = {
 
 // Perfiles de sensibilidad: qué cuenta como curva.
 // pesos: [radio máximo en metros, peso] de más cerrada a más abierta.
-// Calibrado con carreteras reales de Torrelaguna, Cadalso, San Martín y Quijorna (8/11/2026).
+// Calibrado con carreteras reales de Torrelaguna, Cadalso, San Martín y Quijorna (8/11/2026, 2.º ajuste).
 export const PERFILES = {
   estricta: {
     nombre: 'Solo carreteras muy reviradas',
@@ -26,8 +26,8 @@ export const PERFILES = {
   },
   normal: {
     nombre: 'Equilibrado (recomendado)',
-    pesos: [[35, 2], [60, 1.5], [100, 1.1], [175, 0.7], [250, 0.3]],
-    umbralCurvas: 0.25, longMin: 1200, nivelNaranja: 0.4, nivelRojo: 0.6, sinClasificar: false,
+    pesos: [[35, 2], [60, 1.55], [100, 1.2], [175, 0.8], [250, 0.45]],
+    umbralCurvas: 0.2, longMin: 1000, nivelNaranja: 0.38, nivelRojo: 0.58, sinClasificar: false,
   },
   amplia: {
     nombre: 'Amplio: también curvas suaves',

@@ -1,9 +1,9 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass, cfgPerfil } from './curvas.js?v=13';
+import { procesarOverpass, cfgPerfil } from './curvas.js?v=14';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
-const VERSION = 'v2'; // cambia al recalibrar para volver a analizar las carreteras
+const VERSION = 'v3'; // cambia al recalibrar para volver a analizar las carreteras
 const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
