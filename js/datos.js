@@ -138,9 +138,11 @@ export async function ruta(puntos, { peajes = true } = {}) {
   if (!r.ok) {
     let msg = '';
     try { msg = (await r.json())?.error?.message || ''; } catch {}
-    if (r.status === 401 || r.status === 403) throw new Error('La clave de OpenRouteService no es válida. Revísala en Ajustes.');
+    if (r.status === 403 && /quota|limit|exceed/i.test(msg)) throw new Error('Has agotado la cuota diaria de OpenRouteService. Se renueva 24 horas después de tu primera consulta del día.');
+    if (r.status === 401) throw new Error('La clave de OpenRouteService no es válida. Revísala en Ajustes.');
+    if (r.status === 403) throw new Error('OpenRouteService ha rechazado la consulta: o la clave no es válida o se ha agotado la cuota diaria. Puedes ver tu cuota en account.heigit.org.');
     if (/2010|routable point/i.test(msg)) throw new Error('Algún punto queda lejos de una carretera. Muévelo más cerca de una vía.');
-    if (r.status === 429) throw new Error('Has agotado la cuota de OpenRouteService por ahora. Prueba más tarde.');
+    if (r.status === 429) throw new Error('Demasiadas consultas seguidas a OpenRouteService. Espera un minuto y vuelve a intentarlo.');
     throw new Error(`El servicio de rutas no pudo calcularla (${r.status}). ${msg}`);
   }
   const j = await r.json();
