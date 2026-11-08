@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=12';
-import * as D from './datos.js?v=12';
+import * as C from './curvas.js?v=13';
+import * as D from './datos.js?v=13';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -692,10 +692,29 @@ $('#btn-ci').addEventListener('click', (e) => { S.semilla = 1; ocupado(e.current
 $('#btn-ci-otra').addEventListener('click', (e) => { S.semilla++; ocupado(e.currentTarget, disenarCircular); });
 
 // ---------- Resultado ----------
+function curvasDeRuta(coords) {
+  try {
+    return C.tramosDeCadena({ coords, ids: ['ruta'], ref: '', name: '' }, C.cfgPerfil(D.ajustes().perfil));
+  } catch { return []; }
+}
+function resumenCurvas(curvas) {
+  if (!curvas.length) return '<div class="curvas-ruta"><span>El recorrido no pasa por zonas de curvas.</span></div>';
+  const km = (l) => curvas.filter((t) => t.lvl === l).reduce((s, t) => s + t.km, 0);
+  const total = curvas.reduce((s, t) => s + t.km, 0);
+  const partes = [[3, 'revirado'], [2, 'muchas curvas'], [1, 'curvas']]
+    .filter(([l]) => km(l) >= 0.5)
+    .map(([l, txt]) => `<span class="chip"><i style="background:${COLOR[l]}"></i>${Math.round(km(l))} km ${txt}</span>`).join('');
+  return `<div class="curvas-ruta"><b>${Math.round(total)} km de curvas en el recorrido</b>${partes}</div>`;
+}
+
 function mostrarResultado(r) {
   S.resultado = r;
   capaRuta.clearLayers();
   capaGas.clearLayers();
+  // Curvas del propio recorrido: se calculan sobre la línea de la ruta con el mismo criterio que el mapa
+  // y se dibujan como una franja de color a ambos lados de la línea azul.
+  const curvasRuta = curvasDeRuta(r.coords);
+  for (const t of curvasRuta) L.polyline(t.coords, { color: COLOR[t.lvl], weight: 17, opacity: 0.95, lineCap: 'butt', interactive: false }).addTo(capaRuta);
   L.polyline(r.coords, { color: '#ffffff', weight: 8, opacity: 0.9, interactive: false }).addTo(capaRuta);
   L.polyline(r.coords, { color: '#1b4fa3', weight: 4.5, opacity: 1, interactive: false }).addTo(capaRuta);
   if (S.modo === 'tramos' && S.elegidos.length) pintarSeleccion(); else {
@@ -728,6 +747,7 @@ function mostrarResultado(r) {
       <div><b>${fmtKm(r.distance)}</b><small>Distancia</small></div>
       <div><b>${fmtH(r.duration)}</b><small>Tiempo estimado</small></div>
     </div>
+    ${resumenCurvas(curvasRuta)}
     <div class="barra-reparto" aria-hidden="true">${filas.map(([c, , v]) => `<i class="${c}" style="width:${pc(v.s)}"></i>`).join('')}</div>
     <ul class="reparto">${filas.map(([c, txt, v, sub]) => `<li><i class="${c}"></i><span>${txt}</span><span class="num">${fmtH(v.s)} · ${fmtKm(v.m)}</span>${sub ? `<span class="sub">${sub}</span>` : ''}</li>`).join('')}</ul>
     ${r.avisos.map((a) => `<div class="aviso info">${esc(a)}</div>`).join('')}

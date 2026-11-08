@@ -195,6 +195,12 @@ input[type="radio"], input[type="checkbox"] { width: 20px; height: 20px; accent-
 .radar-mapa svg { width: 12px; height: 12px; }
 .radar-mapa.tramo { border-color: #7a3db8; }
 
+/* Resumen de curvas del recorrido */
+.curvas-ruta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 15px; }
+.curvas-ruta b { flex-basis: 100%; font: 700 17px/1.2 var(--f-titulo); text-transform: uppercase; letter-spacing: .03em; }
+.curvas-ruta .chip { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.curvas-ruta .chip i { width: 18px; height: 6px; border-radius: 3px; display: block; }
+
 /* Resultado */
 .resultado { border-top: 1px solid var(--linea); padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .totales { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
