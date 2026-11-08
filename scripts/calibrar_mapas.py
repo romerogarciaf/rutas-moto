@@ -9,7 +9,7 @@ ANCHO = {'motorway': 2.2, 'trunk': 2.0, 'primary': 1.6, 'secondary': 1.3, 'terti
 for f in sorted(glob.glob('calibracion/*.json')):
     d = json.load(open(f))
     perfiles = list(d['perfiles'].keys())
-    fig, axes = plt.subplots(1, len(perfiles), figsize=(8 * len(perfiles), 8.5))
+    fig, axes = plt.subplots(1, len(perfiles), figsize=(6.5 * len(perfiles), 7.5))
     for ax, pf in zip(axes, perfiles):
         for c in d['carreteras']:
             ys, xs = zip(*c['c']); hw = c['hw'].replace('_link', '')

@@ -6,7 +6,11 @@ const ZONAS = {
   torrelaguna: { s: 40.66, n: 40.93, w: -3.72, e: -3.35 },
   cadalso: { s: 40.13, n: 40.38, w: -4.62, e: -4.33 },
   sanmartin: { s: 40.26, n: 40.62, w: -4.56, e: -4.22 },
+  quijorna: { s: 40.36, n: 40.52, w: -4.16, e: -3.94 },
 };
+// Perfiles de prueba opcionales (scripts/perfiles-prueba.json) además de los de la app.
+const PRUEBA = fs.existsSync('scripts/perfiles-prueba.json') ? JSON.parse(fs.readFileSync('scripts/perfiles-prueba.json', 'utf8')) : {};
+const TODOS = { ...Object.fromEntries(Object.keys(PERFILES).map((k) => [k, cfgPerfil(k)])), ...Object.fromEntries(Object.entries(PRUEBA).map(([k, v]) => [k, { ...cfgPerfil('normal'), ...v }])) };
 const SIN_ASFALTAR = 'unpaved|gravel|fine_gravel|dirt|earth|ground|grass|sand|mud|compacted|pebblestone|rock|wood';
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -30,8 +34,7 @@ out body geom qt;`);
   const res = { zona: nombre, bbox: z, carreteras: [], lugares: [], perfiles: {} };
   for (const e of vias.elements) if (e.geometry) res.carreteras.push({ hw: e.tags.highway, c: e.geometry.map((g) => [+g.lat.toFixed(5), +g.lon.toFixed(5)]) });
   for (const e of lugares.elements) res.lugares.push({ n: e.tags.name, p: [e.lat, e.lon], t: e.tags.place });
-  for (const pf of Object.keys(PERFILES)) {
-    const cfg = cfgPerfil(pf);
+  for (const [pf, cfg] of Object.entries(TODOS)) {
     const tipos = new Set(['primary', 'secondary', 'tertiary', 'primary_link', 'secondary_link', 'tertiary_link', ...(cfg.sinClasificar ? ['unclassified'] : [])]);
     const json = { elements: vias.elements.filter((e) => tipos.has(e.tags?.highway)) };
     const tramos = procesarOverpass(json, z, cfg);

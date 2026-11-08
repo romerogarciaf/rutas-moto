@@ -1,0 +1,60 @@
+{
+ "p1": {
+  "pesos": [
+   [
+    35,
+    2
+   ],
+   [
+    60,
+    1.5
+   ],
+   [
+    100,
+    1.1
+   ],
+   [
+    175,
+    0.7
+   ],
+   [
+    250,
+    0.3
+   ]
+  ],
+  "umbralCurvas": 0.25,
+  "longMin": 1200,
+  "nivelNaranja": 0.45,
+  "nivelRojo": 0.7,
+  "sinClasificar": false
+ },
+ "p2": {
+  "pesos": [
+   [
+    35,
+    2
+   ],
+   [
+    60,
+    1.5
+   ],
+   [
+    100,
+    1.1
+   ],
+   [
+    175,
+    0.7
+   ],
+   [
+    250,
+    0.3
+   ]
+  ],
+  "umbralCurvas": 0.3,
+  "longMin": 1500,
+  "nivelNaranja": 0.5,
+  "nivelRojo": 0.8,
+  "sinClasificar": false
+ }
+}
