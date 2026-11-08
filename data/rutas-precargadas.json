@@ -4,14 +4,437 @@
     "nombre": "Brunete – Cebreros por Navalagamella",
     "sinEntrar": true,
     "paradas": [
-      { "nombre": "Brunete", "buscar": ["Brunete, 28690, Madrid", "Brunete, Madrid"] },
-      { "nombre": "Villanueva de la Cañada", "buscar": ["Villanueva de la Cañada, 28691, Madrid", "Villanueva de la Cañada"] },
-      { "nombre": "Quijorna", "buscar": ["Quijorna, 28693, Madrid", "Quijorna"] },
-      { "nombre": "Navalagamella", "buscar": ["Navalagamella, 28212, Madrid", "Navalagamella"] },
-      { "nombre": "Colmenar del Arroyo", "buscar": ["Colmenar del Arroyo, 28213, Madrid", "Colmenar del Arroyo"] },
-      { "nombre": "Palacio de El Quexigal", "buscar": ["Palacio de El Quexigal, Cebreros", "El Quexigal, Cebreros, Ávila", "Quexigal"], "contiene": "quexigal" },
-      { "nombre": "Cebreros", "buscar": ["Cebreros, 05260, Ávila", "Cebreros, Ávila"] },
-      { "nombre": "Casa", "casa": true }
+      {
+        "nombre": "Brunete",
+        "buscar": [
+          "Brunete, 28690, Madrid",
+          "Brunete, Madrid"
+        ]
+      },
+      {
+        "nombre": "Villanueva de la Cañada",
+        "buscar": [
+          "Villanueva de la Cañada, 28691, Madrid",
+          "Villanueva de la Cañada"
+        ]
+      },
+      {
+        "nombre": "Quijorna",
+        "buscar": [
+          "Quijorna, 28693, Madrid",
+          "Quijorna"
+        ]
+      },
+      {
+        "nombre": "Navalagamella",
+        "buscar": [
+          "Navalagamella, 28212, Madrid",
+          "Navalagamella"
+        ]
+      },
+      {
+        "nombre": "Colmenar del Arroyo",
+        "buscar": [
+          "Colmenar del Arroyo, 28213, Madrid",
+          "Colmenar del Arroyo"
+        ]
+      },
+      {
+        "nombre": "Palacio de El Quexigal",
+        "buscar": [
+          "Palacio de El Quexigal, Cebreros",
+          "El Quexigal, Cebreros, Ávila",
+          "Quexigal"
+        ],
+        "contiene": "quexigal"
+      },
+      {
+        "nombre": "Cebreros",
+        "buscar": [
+          "Cebreros, 05260, Ávila",
+          "Cebreros, Ávila"
+        ]
+      },
+      {
+        "nombre": "Casa",
+        "casa": true
+      }
+    ]
+  },
+  {
+    "id": "pre-guadarrama-puertos",
+    "nombre": "Puertos de Guadarrama: Navacerrada, Cotos y Morcuera",
+    "sinEntrar": true,
+    "fuente": {
+      "nombre": "Mucho Neumático – Rutas en moto por Madrid",
+      "url": "https://www.muchoneumatico.com/blog/viajes/rutas-moto-madrid/"
+    },
+    "paradas": [
+      {
+        "nombre": "Cercedilla",
+        "buscar": [
+          "Cercedilla, Madrid",
+          "Cercedilla"
+        ]
+      },
+      {
+        "nombre": "Puerto de Navacerrada",
+        "buscar": [
+          "Puerto de Navacerrada"
+        ],
+        "contiene": "navacerrada",
+        "exacta": true
+      },
+      {
+        "nombre": "Puerto de Cotos",
+        "buscar": [
+          "Puerto de Cotos",
+          "Cotos, Rascafría"
+        ],
+        "contiene": "cotos",
+        "exacta": true
+      },
+      {
+        "nombre": "Puerto de la Morcuera",
+        "buscar": [
+          "Puerto de la Morcuera",
+          "Morcuera"
+        ],
+        "contiene": "morcuera",
+        "exacta": true
+      },
+      {
+        "nombre": "Miraflores de la Sierra",
+        "buscar": [
+          "Miraflores de la Sierra, Madrid",
+          "Miraflores de la Sierra"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pre-puebla-de-la-sierra",
+    "nombre": "Sierra Norte: El Atazar y Puebla de la Sierra",
+    "sinEntrar": true,
+    "fuente": {
+      "nombre": "Soymotero.net – De Madrid a Puebla de la Sierra",
+      "url": "https://soymotero.net/rutas/rutas-de-madrid-a-puebla-de-la-sierra/"
+    },
+    "paradas": [
+      {
+        "nombre": "Torrelaguna",
+        "buscar": [
+          "Torrelaguna, Madrid",
+          "Torrelaguna"
+        ]
+      },
+      {
+        "nombre": "El Berrueco",
+        "buscar": [
+          "El Berrueco, Madrid",
+          "El Berrueco"
+        ]
+      },
+      {
+        "nombre": "Cervera de Buitrago",
+        "buscar": [
+          "Cervera de Buitrago, Madrid",
+          "Cervera de Buitrago"
+        ]
+      },
+      {
+        "nombre": "Presa de El Villar",
+        "buscar": [
+          "Presa de El Villar, Robledillo de la Jara",
+          "Embalse de El Villar"
+        ],
+        "contiene": "villar",
+        "exacta": true
+      },
+      {
+        "nombre": "Robledillo de la Jara",
+        "buscar": [
+          "Robledillo de la Jara, Madrid",
+          "Robledillo de la Jara"
+        ]
+      },
+      {
+        "nombre": "Berzosa del Lozoya",
+        "buscar": [
+          "Berzosa del Lozoya, Madrid",
+          "Berzosa de Lozoya"
+        ],
+        "contiene": "berzosa"
+      },
+      {
+        "nombre": "Serrada de la Fuente",
+        "buscar": [
+          "Serrada de la Fuente, Madrid",
+          "Serrada de la Fuente"
+        ],
+        "contiene": "serrada"
+      },
+      {
+        "nombre": "Paredes de Buitrago",
+        "buscar": [
+          "Paredes de Buitrago, Madrid",
+          "Paredes de Buitrago"
+        ]
+      },
+      {
+        "nombre": "Prádena del Rincón",
+        "buscar": [
+          "Prádena del Rincón, Madrid",
+          "Prádena del Rincón"
+        ]
+      },
+      {
+        "nombre": "Puebla de la Sierra",
+        "buscar": [
+          "Puebla de la Sierra, Madrid",
+          "Puebla de la Sierra"
+        ]
+      },
+      {
+        "nombre": "Gandullas",
+        "buscar": [
+          "Gandullas, Piñuécar-Gandullas",
+          "Gandullas"
+        ],
+        "contiene": "gandullas"
+      },
+      {
+        "nombre": "Buitrago del Lozoya",
+        "buscar": [
+          "Buitrago del Lozoya, Madrid"
+        ],
+        "contiene": "buitrago"
+      }
+    ]
+  },
+  {
+    "id": "pre-ruta-pantanos",
+    "nombre": "Ruta de los pantanos: El Escorial – San Juan – Navalcarnero",
+    "sinEntrar": true,
+    "fuente": {
+      "nombre": "Mucho Neumático – Rutas en moto por Madrid",
+      "url": "https://www.muchoneumatico.com/blog/viajes/rutas-moto-madrid/"
+    },
+    "paradas": [
+      {
+        "nombre": "San Lorenzo de El Escorial",
+        "buscar": [
+          "San Lorenzo de El Escorial, Madrid",
+          "San Lorenzo de El Escorial"
+        ],
+        "contiene": "escorial"
+      },
+      {
+        "nombre": "Presa de Valmayor",
+        "buscar": [
+          "Presa del Embalse de Valmayor",
+          "Embalse de Valmayor"
+        ],
+        "contiene": "valmayor",
+        "exacta": true
+      },
+      {
+        "nombre": "Embalse de San Juan",
+        "buscar": [
+          "Embalse de San Juan, San Martín de Valdeiglesias",
+          "Embalse de San Juan"
+        ],
+        "contiene": "san juan",
+        "exacta": true
+      },
+      {
+        "nombre": "Pelayos de la Presa",
+        "buscar": [
+          "Pelayos de la Presa, Madrid",
+          "Pelayos de la Presa"
+        ]
+      },
+      {
+        "nombre": "Navalcarnero",
+        "buscar": [
+          "Navalcarnero, Madrid",
+          "Navalcarnero"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pre-cruz-verde-valmayor",
+    "nombre": "Circular de El Escorial por la Cruz Verde y Valmayor",
+    "sinEntrar": true,
+    "fuente": {
+      "nombre": "OK Mobility – Best motorcycle routes from Madrid",
+      "url": "https://okmobility.com/en/blog/motorcycle-routes-madrid"
+    },
+    "paradas": [
+      {
+        "nombre": "San Lorenzo de El Escorial",
+        "buscar": [
+          "San Lorenzo de El Escorial, Madrid",
+          "San Lorenzo de El Escorial"
+        ],
+        "contiene": "escorial"
+      },
+      {
+        "nombre": "Puerto de la Cruz Verde",
+        "buscar": [
+          "Puerto de la Cruz Verde",
+          "Collado de la Cruz Verde"
+        ],
+        "contiene": "cruz verde",
+        "exacta": true
+      },
+      {
+        "nombre": "Zarzalejo",
+        "buscar": [
+          "Zarzalejo, Madrid",
+          "Zarzalejo"
+        ]
+      },
+      {
+        "nombre": "Peralejo",
+        "buscar": [
+          "Peralejo, El Escorial",
+          "Peralejo"
+        ],
+        "contiene": "peralejo"
+      },
+      {
+        "nombre": "Presa de Valmayor",
+        "buscar": [
+          "Presa del Embalse de Valmayor",
+          "Embalse de Valmayor"
+        ],
+        "contiene": "valmayor",
+        "exacta": true
+      },
+      {
+        "nombre": "San Lorenzo de El Escorial",
+        "buscar": [
+          "San Lorenzo de El Escorial, Madrid",
+          "San Lorenzo de El Escorial"
+        ],
+        "contiene": "escorial"
+      }
+    ]
+  },
+  {
+    "id": "pre-sierra-oeste",
+    "nombre": "Sierra Oeste: Quijorna, Picadas y San Martín",
+    "sinEntrar": true,
+    "fuente": {
+      "nombre": "Mucho Neumático – Rutas en moto por Madrid",
+      "url": "https://www.muchoneumatico.com/blog/viajes/rutas-moto-madrid/"
+    },
+    "paradas": [
+      {
+        "nombre": "Brunete",
+        "buscar": [
+          "Brunete, Madrid",
+          "Brunete"
+        ]
+      },
+      {
+        "nombre": "Quijorna",
+        "buscar": [
+          "Quijorna, Madrid",
+          "Quijorna"
+        ]
+      },
+      {
+        "nombre": "Villanueva de la Cañada",
+        "buscar": [
+          "Villanueva de la Cañada, Madrid",
+          "Villanueva de la Cañada"
+        ]
+      },
+      {
+        "nombre": "Embalse de Picadas",
+        "buscar": [
+          "Embalse de Picadas",
+          "Presa de Picadas"
+        ],
+        "contiene": "picadas",
+        "exacta": true
+      },
+      {
+        "nombre": "San Martín de Valdeiglesias",
+        "buscar": [
+          "San Martín de Valdeiglesias, Madrid",
+          "San Martín de Valdeiglesias"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pre-puertos-sierra-norte",
+    "nombre": "De Torrelaguna a El Escorial por cinco puertos",
+    "sinEntrar": true,
+    "fuente": {
+      "nombre": "IFEMA – Mejores rutas en moto por Madrid",
+      "url": "https://www.ifema.es/visita-madrid/turismo/mejores-rutas-en-moto-por-madrid"
+    },
+    "nota": "La fuente nombra los puertos sin indicar el orden; aquí van en orden geográfico de norte a sur.",
+    "paradas": [
+      {
+        "nombre": "Torrelaguna",
+        "buscar": [
+          "Torrelaguna, Madrid",
+          "Torrelaguna"
+        ]
+      },
+      {
+        "nombre": "La Hiruela",
+        "buscar": [
+          "La Hiruela, Madrid",
+          "La Hiruela"
+        ]
+      },
+      {
+        "nombre": "Somosierra",
+        "buscar": [
+          "Somosierra, Madrid",
+          "Somosierra"
+        ]
+      },
+      {
+        "nombre": "Puerto de Navafría",
+        "buscar": [
+          "Puerto de Navafría"
+        ],
+        "contiene": "navafria",
+        "exacta": true
+      },
+      {
+        "nombre": "Puerto de la Morcuera",
+        "buscar": [
+          "Puerto de la Morcuera",
+          "Morcuera"
+        ],
+        "contiene": "morcuera",
+        "exacta": true
+      },
+      {
+        "nombre": "Puerto de Navacerrada",
+        "buscar": [
+          "Puerto de Navacerrada"
+        ],
+        "contiene": "navacerrada",
+        "exacta": true
+      },
+      {
+        "nombre": "San Lorenzo de El Escorial",
+        "buscar": [
+          "San Lorenzo de El Escorial, Madrid",
+          "San Lorenzo de El Escorial"
+        ],
+        "contiene": "escorial"
+      }
     ]
   }
 ]

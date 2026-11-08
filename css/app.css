@@ -241,7 +241,9 @@ input[type="radio"], input[type="checkbox"] { width: 20px; height: 20px; accent-
 }
 .lista-favoritas li { border: 1px solid var(--linea); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
 .lista-favoritas b { font: 700 19px/1.1 var(--f-titulo); text-transform: uppercase; letter-spacing: .02em; display: block; }
-.lista-favoritas small { color: var(--suave); font-variant-numeric: tabular-nums; }
+.lista-favoritas small { color: var(--suave); font-variant-numeric: tabular-nums; display: block; }
+.lista-favoritas .fuente { margin-top: 3px; font-size: 13px; }
+.lista-favoritas .fuente a, .aviso a { color: var(--acento); }
 .lista-favoritas .botones { display: flex; gap: 6px; }
 .lista-favoritas .botones button { min-height: 40px; padding: 6px 10px; font-size: 15px; }
 .vacio { color: var(--suave); text-align: center; padding: 18px 0; }

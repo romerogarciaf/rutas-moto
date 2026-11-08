@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=10';
-import * as D from './datos.js?v=10';
+import * as C from './curvas.js?v=11';
+import * as D from './datos.js?v=11';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -731,6 +731,7 @@ function mostrarResultado(r) {
     <div class="barra-reparto" aria-hidden="true">${filas.map(([c, , v]) => `<i class="${c}" style="width:${pc(v.s)}"></i>`).join('')}</div>
     <ul class="reparto">${filas.map(([c, txt, v, sub]) => `<li><i class="${c}"></i><span>${txt}</span><span class="num">${fmtH(v.s)} · ${fmtKm(v.m)}</span>${sub ? `<span class="sub">${sub}</span>` : ''}</li>`).join('')}</ul>
     ${r.avisos.map((a) => `<div class="aviso info">${esc(a)}</div>`).join('')}
+    ${r.fuente ? `<div class="aviso info">Ruta publicada en <a href="${esc(r.fuente.url)}" target="_blank" rel="noopener">${esc(r.fuente.nombre)}</a>.${r.nota ? ` ${esc(r.nota)}` : ''} Los puntos los ha localizado la app: revisa en el mapa que caen donde deben.</div>` : ''}
     <div id="gas" class="aviso info">Buscando gasolineras en la ruta…</div>
     <div id="radares-ruta" class="aviso info" hidden></div>
     <div class="acciones-resultado">
@@ -847,7 +848,7 @@ async function pintarFavoritas() {
     return `${fmtKm(f.distance)} · ${fmtH(f.duration)} · ${extra} · ${new Date(f.fecha).toLocaleDateString('es-ES')}`;
   };
   ul.innerHTML = favs.map((f) => `<li>
-    <div><b>${esc(f.nombre)}</b><small>${detalle(f)}</small></div>
+    <div><b>${esc(f.nombre)}</b><small>${detalle(f)}</small>${f.fuente ? `<small class="fuente">Ruta publicada en <a href="${esc(f.fuente.url)}" target="_blank" rel="noopener">${esc(f.fuente.nombre)}</a></small>` : ''}</div>
     <div class="botones"><button class="pri" data-abrir="${f.id}">Abrir</button>${f.pendiente ? '' : `<button class="sec" data-editar="${f.id}">Editar</button>`}<button class="sec" data-borrar="${f.id}" aria-label="Borrar ${esc(f.nombre)}">Borrar</button></div>
   </li>`).join('');
   ul.querySelectorAll('[data-abrir]').forEach((b) => b.addEventListener('click', () => {
@@ -929,20 +930,22 @@ function elementosDeFav(f) {
 }
 
 function puntosDeElementos(elems, sep) {
-  const pts = [], meta = [];
+  const pts = [], meta = [], radios = [];
   for (const e of elems) {
     const ini = pts.length;
-    if (e.tipo === 'punto') pts.push(e.p);
+    // Las paradas por nombre (un pueblo, un embalse) pueden quedar lejos de la carretera: se amplía la búsqueda.
+    if (e.tipo === 'punto') { pts.push(e.p); radios.push(-1); }
     else {
       const c = orientado(e);
       pts.push(c[0]);
       let acum = 0;
       for (let i = 1; i < c.length - 1; i++) { acum += C.dist(c[i - 1], c[i]); if (acum >= sep) { pts.push(c[i]); acum = 0; } }
       pts.push(c[c.length - 1]);
+      while (radios.length < pts.length) radios.push(350);
     }
     meta.push({ ini, fin: pts.length - 1 });
   }
-  return { pts, meta };
+  return { pts, meta, radios };
 }
 
 async function calcularElementos(elems, { sinEntrar }) {
@@ -952,11 +955,12 @@ async function calcularElementos(elems, { sinEntrar }) {
   let sep = 3000, r0 = puntosDeElementos(elems, sep);
   while (r0.pts.length > 50 && sep < 200000) { sep *= 1.5; r0 = puntosDeElementos(elems, sep); }
   if (r0.pts.length > 50) throw new Error('La ruta tiene demasiadas paradas para calcularla de una vez (máximo unas 45).');
-  const { meta } = r0;
+  const { meta, radios } = r0;
   const pts = r0.pts.slice();
   estado('Calculando el recorrido…');
-  let r = await D.ruta(pts, { peajes: peajes() });
-  const intermedios = elems.map((e, i) => (e.tipo === 'punto' && i > 0 && i < elems.length - 1 ? i : -1)).filter((i) => i >= 0);
+  let r = await D.ruta(pts, { peajes: peajes(), radios });
+  // Puertos, presas y miradores ("exacta") se recorren tal cual; los pueblos se rodean.
+  const intermedios = elems.map((e, i) => (e.tipo === 'punto' && !e.exacta && i > 0 && i < elems.length - 1 ? i : -1)).filter((i) => i >= 0);
   if (sinEntrar && intermedios.length) {
     const wp = r.wayPoints && r.wayPoints.length === pts.length
       ? r.wayPoints
@@ -967,7 +971,7 @@ async function calcularElementos(elems, { sinEntrar }) {
       pts[k] = puntoAntes(r.coords, wp[k], Math.min(1500, legM * 0.4), wp[k - 1]);
     }
     estado('Ajustando para no entrar en los pueblos…');
-    r = await D.ruta(pts, { peajes: peajes() });
+    r = await D.ruta(pts, { peajes: peajes(), radios });
   }
   estado('');
   // Filas del desglose: enlace entre elementos y, dentro de cada tramo, la parte de curvas.
@@ -1010,7 +1014,7 @@ async function abrirRutaElementos(f) {
     try {
       const { elems, sinEntrar } = elementosDeFav(f);
       const r = await calcularElementos(elems, { sinEntrar });
-      const guardar = favDesde(r, f.nombre, f.id);
+      const guardar = favDesde({ ...r, fuente: f.fuente, nota: f.nota }, f.nombre, f.id);
       await D.idb.put('favoritas', guardar);
       f = guardar;
     } catch (e) {
@@ -1023,19 +1027,21 @@ async function abrirRutaElementos(f) {
   }
   S.salida = { p: f.A, etiqueta: f.elems?.[0]?.nombre || 'Salida' };
   pintarCamposPunto();
-  mostrarResultado({ ...f, modo: 'tramos', favId: f.id, nombre: f.nombre, avisos: f.avisos || (f.sinEntrar ? [AVISO_SIN_ENTRAR] : []) });
+  const hayPueblos = (f.elems || []).some((e, i, a) => e.tipo === 'punto' && !e.exacta && i > 0 && i < a.length - 1);
+  mostrarResultado({ ...f, modo: 'tramos', favId: f.id, nombre: f.nombre, avisos: f.sinEntrar && hayPueblos ? [AVISO_SIN_ENTRAR] : [] });
 }
 
 // Objeto de favorita a partir de un resultado.
 function favDesde(r, nombre, id) {
   return {
+    ...(r.fuente ? { fuente: r.fuente } : {}), ...(r.nota ? { nota: r.nota } : {}),
     id: id || Date.now(), nombre, fecha: new Date().toISOString(),
     modo: r.modo, A: r.A, B: r.B, circular: !!r.circular, vueltaCasa: !!r.vueltaCasa, hayVuelta: r.hayVuelta,
     plan: r.plan.map(({ t, rev }) => ({ t: compactarTramo(t), rev })),
     marcas: r.marcas, legs: r.legs, distance: r.distance, duration: r.duration,
     coords: C.simplificar(r.coords, 4), avisos: r.avisos || (r.sinEntrar ? [AVISO_SIN_ENTRAR] : []),
     ...(r.elems ? {
-      elems: r.elems.map((e) => (e.tipo === 'tramo' ? { tipo: 'tramo', t: compactarTramo(e.t), rev: e.rev } : { tipo: 'punto', nombre: e.nombre, p: e.p })),
+      elems: r.elems.map((e) => (e.tipo === 'tramo' ? { tipo: 'tramo', t: compactarTramo(e.t), rev: e.rev } : { tipo: 'punto', nombre: e.nombre, p: e.p, ...(e.exacta ? { exacta: true } : {}) })),
       sinEntrar: !!r.sinEntrar, filas: r.filas, via: r.via, wpts: r.wpts,
     } : {}),
   };
@@ -1044,7 +1050,7 @@ function favDesde(r, nombre, id) {
 // ---------- Edición de rutas ----------
 function empezarEdicion(r) {
   const base = r.elems ? { elems: structuredClone(r.elems), sinEntrar: !!r.sinEntrar } : elementosDeFav(r);
-  S.edicion = { favId: r.favId || r.id || null, nombre: r.nombre || $('#r-nombre')?.value || 'Ruta', ...base, insertarEn: null };
+  S.edicion = { fuente: r.fuente, nota: r.nota, favId: r.favId || r.id || null, nombre: r.nombre || $('#r-nombre')?.value || 'Ruta', ...base, insertarEn: null };
   cambiarModo('editar');
   $('#ed-nombre').value = S.edicion.nombre;
   $('#ed-sin-entrar').checked = S.edicion.sinEntrar;
@@ -1108,7 +1114,7 @@ $('#ed-guardar').addEventListener('click', (e) => ocupado(e.currentTarget, async
   const ed = S.edicion;
   ed.nombre = $('#ed-nombre').value.trim() || ed.nombre;
   const r = await calcularElementos(ed.elems, { sinEntrar: ed.sinEntrar });
-  const fav = favDesde(r, ed.nombre, ed.favId);
+  const fav = favDesde({ ...r, fuente: ed.fuente, nota: ed.nota }, ed.nombre, ed.favId);
   await D.idb.put('favoritas', fav);
   S.edicion = null;
   capaEdicion.clearLayers();
@@ -1127,9 +1133,11 @@ async function importarPrecargadas() {
     const lista = await r.json();
     let hechas = [];
     try { hechas = JSON.parse(localStorage.getItem('precargadas') || '[]'); } catch {}
-    for (const ruta of lista) {
+    const ahora = Date.now();
+    for (const [n, ruta] of lista.entries()) {
       if (hechas.includes(ruta.id)) continue;
-      await D.idb.put('favoritas', { ...ruta, pendiente: true, plan: [], fecha: new Date().toISOString() });
+      // Fechas escalonadas para que se listen en el mismo orden que el archivo.
+      await D.idb.put('favoritas', { ...ruta, pendiente: true, plan: [], fecha: new Date(ahora - n * 1000).toISOString() });
       hechas.push(ruta.id);
     }
     try { localStorage.setItem('precargadas', JSON.stringify(hechas)); } catch {}

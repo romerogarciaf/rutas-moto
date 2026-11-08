@@ -1,5 +1,5 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass, cfgPerfil } from './curvas.js?v=10';
+import { procesarOverpass, cfgPerfil } from './curvas.js?v=11';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
@@ -117,7 +117,16 @@ function exigirClave() {
   if (!k) throw new Error('Falta tu clave de OpenRouteService. Pégala en Ajustes.');
   return k;
 }
-export async function ruta(puntos, { peajes = true } = {}) {
+export async function ruta(puntos, { peajes = true, radios = null } = {}) {
+  try {
+    return await rutaUnaVez(puntos, { peajes, radios });
+  } catch (e) {
+    // Si el servicio no admite el radio de búsqueda ampliado, se reintenta con el normal.
+    if (radios && /radius|radiuses|2003|2010/i.test(e.message)) return rutaUnaVez(puntos, { peajes, radios: null });
+    throw e;
+  }
+}
+async function rutaUnaVez(puntos, { peajes, radios }) {
   const clave = exigirClave();
   const body = {
     coordinates: puntos.map((p) => [+p[1].toFixed(6), +p[0].toFixed(6)]),
@@ -125,6 +134,7 @@ export async function ruta(puntos, { peajes = true } = {}) {
     preference: 'recommended',
   };
   if (peajes) body.options = { avoid_features: ['tollways'] };
+  if (radios) body.radiuses = radios;
   let r;
   try {
     r = await fetch(`${ORS}/v2/directions/driving-car/geojson`, {
