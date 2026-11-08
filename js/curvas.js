@@ -5,6 +5,7 @@ export const CFG = {
   pasoRemuestreo: 10,      // metros entre puntos al remuestrear
   kRadio: 2,               // puntos a cada lado para calcular el radio (2 x 10 m)
   ventana: 50,             // puntos a cada lado en la ventana móvil (≈ 1 km total)
+  pesos: [[35, 2], [60, 1.5], [100, 1], [175, 0.6]],
   umbralCurvas: 0.3,       // densidad mínima para considerar un tramo revirado
   hueco: 30,               // puntos (≈ 300 m) de recta que se toleran dentro de un tramo
   longMin: 1500,           // metros mínimos de un tramo
@@ -13,6 +14,30 @@ export const CFG = {
   velNivel: { 1: 65, 2: 55, 3: 45 },   // km/h estimados en cada nivel
   pesoNivel: { 1: 1, 2: 1.7, 3: 2.5 }, // valor de cada km según nivel
 };
+
+// Perfiles de sensibilidad: qué cuenta como curva.
+// pesos: [radio máximo en metros, peso] de más cerrada a más abierta.
+export const PERFILES = {
+  estricta: {
+    nombre: 'Solo carreteras muy reviradas',
+    pesos: [[35, 2], [60, 1.5], [100, 1], [175, 0.6]],
+    umbralCurvas: 0.3, longMin: 1500, nivelNaranja: 0.45, nivelRojo: 0.65, sinClasificar: false,
+  },
+  normal: {
+    nombre: 'Equilibrado (recomendado)',
+    pesos: [[35, 2], [60, 1.6], [100, 1.3], [175, 0.9], [300, 0.6]],
+    umbralCurvas: 0.15, longMin: 1000, nivelNaranja: 0.32, nivelRojo: 0.5, sinClasificar: false,
+  },
+  amplia: {
+    nombre: 'Todas, incluidas curvas suaves y carreteras locales',
+    pesos: [[35, 2], [60, 1.6], [100, 1.3], [175, 0.9], [300, 0.6], [450, 0.35]],
+    umbralCurvas: 0.1, longMin: 800, nivelNaranja: 0.3, nivelRojo: 0.5, sinClasificar: true,
+  },
+};
+export function cfgPerfil(nombre) {
+  const p = PERFILES[nombre] || PERFILES.normal;
+  return { ...CFG, ...p };
+}
 
 const R = 6371008.8;
 const rad = (d) => (d * Math.PI) / 180;
@@ -70,11 +95,8 @@ export function radio(p1, p2, p3) {
   return (a * b * c) / (2 * area2);
 }
 
-export function pesoRadio(r) {
-  if (r < 35) return 2;
-  if (r < 60) return 1.5;
-  if (r < 100) return 1;
-  if (r < 175) return 0.6;
+export function pesoRadio(r, pesos = PERFILES.estricta.pesos) {
+  for (const [max, w] of pesos) if (r < max) return w;
   return 0;
 }
 
@@ -142,7 +164,7 @@ export function tramosDeCadena(cadena, cfg = CFG) {
   if (n * cfg.pasoRemuestreo < cfg.longMin) return [];
   const k = cfg.kRadio;
   const w = new Float64Array(n);
-  for (let i = k; i < n - k; i++) w[i] = pesoRadio(radio(p[i - k], p[i], p[i + k]));
+  for (let i = k; i < n - k; i++) w[i] = pesoRadio(radio(p[i - k], p[i], p[i + k]), cfg.pesos);
   const pref = new Float64Array(n + 1);
   for (let i = 0; i < n; i++) pref[i + 1] = pref[i] + w[i];
   const V = cfg.ventana;

@@ -1,5 +1,5 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass } from './curvas.js?v=9';
+import { procesarOverpass, cfgPerfil } from './curvas.js?v=10';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
@@ -12,7 +12,7 @@ const ORS = 'https://api.heigit.org/openrouteservice';
 const PELIAS = 'https://api.heigit.org/pelias/v1';
 
 // ---------- Ajustes (en el propio iPhone) ----------
-const DEF = { clave: '', autonomia: 200, reserva: 30, peajes: true, habitual: null, casa: null };
+const DEF = { clave: '', autonomia: 200, reserva: 30, peajes: true, habitual: null, casa: null, perfil: 'normal' };
 export function ajustes() {
   try { return { ...DEF, ...JSON.parse(localStorage.getItem('ajustes') || '{}') }; } catch { return { ...DEF }; }
 }
@@ -55,7 +55,8 @@ export const idb = {
 };
 
 // ---------- Celdas de curvas ----------
-export function claveCelda(i, j) { return `${VERSION}:${i}:${j}`; }
+export const prefijoCeldas = () => `${VERSION}:${ajustes().perfil || 'normal'}:`;
+export function claveCelda(i, j) { return `${prefijoCeldas()}${i}:${j}`; }
 export function celdasDe(bbox) {
   const out = [];
   const i0 = Math.floor(bbox.s / TAM_CELDA), i1 = Math.floor(bbox.n / TAM_CELDA);
@@ -87,11 +88,13 @@ const SIN_ASFALTAR = 'unpaved|gravel|fine_gravel|dirt|earth|ground|grass|sand|mu
 export async function descargarCelda(i, j) {
   const c = limites(i, j);
   const b = `${(c.s - MARGEN).toFixed(3)},${(c.w - MARGEN).toFixed(3)},${(c.n + MARGEN).toFixed(3)},${(c.e + MARGEN).toFixed(3)}`;
+  const cfg = cfgPerfil(ajustes().perfil);
+  const tipos = 'primary|secondary|tertiary|primary_link|secondary_link|tertiary_link' + (cfg.sinClasificar ? '|unclassified' : '');
   const q = `[out:json][timeout:90];
-way["highway"~"^(primary|secondary|tertiary|primary_link|secondary_link|tertiary_link)$"]["surface"!~"^(${SIN_ASFALTAR})$"]["tracktype"!~"."]["access"!~"^(no|private)$"](${b});
+way["highway"~"^(${tipos})$"]["surface"!~"^(${SIN_ASFALTAR})$"]["tracktype"!~"."]["access"!~"^(no|private)$"](${b});
 out body geom qt;`;
   const json = await overpass(q);
-  const tramos = procesarOverpass(json, c);
+  const tramos = procesarOverpass(json, c, cfg);
   const reg = { t: Date.now(), tramos };
   await idb.put('celdas', reg, claveCelda(i, j));
   return reg;

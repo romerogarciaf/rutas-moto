@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=9';
-import * as D from './datos.js?v=9';
+import * as C from './curvas.js?v=10';
+import * as D from './datos.js?v=10';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -151,9 +151,13 @@ mapa.on('zoomend moveend', programarZonas);
 async function cargarGuardadas() {
   try {
     const claves = await D.idb.keys('celdas');
-    const vals = await D.idb.all('celdas');
-    claves.forEach((k) => S.celdas.add(k));
-    for (const v of vals) anadirTramos(v.tramos);
+    const pref = D.prefijoCeldas();
+    for (const k of claves) {
+      if (!String(k).startsWith(pref)) { D.idb.del('celdas', k); continue; } // datos de otra sensibilidad
+      const v = await D.idb.get('celdas', k);
+      S.celdas.add(k);
+      if (v) anadirTramos(v.tramos);
+    }
   } catch { /* sin almacenamiento: se descargará al vuelo */ }
 }
 
@@ -1190,6 +1194,7 @@ $('#btn-ajustes').addEventListener('click', () => {
   $('#aj-autonomia').value = a.autonomia;
   $('#aj-reserva').value = a.reserva;
   $('#aj-peajes').checked = a.peajes;
+  $('#aj-perfil').value = a.perfil || 'normal';
   $('#aj-habitual').textContent = a.habitual
     ? `Tu salida habitual es ${a.habitual.etiqueta}. La app arranca allí y la pone como salida.`
     : 'Busca un lugar con la lupa y pulsa "Guardar como salida habitual" para que la app arranque allí.';
@@ -1205,8 +1210,16 @@ $('#aj-guardar').addEventListener('click', () => {
     autonomia: Math.max(30, +$('#aj-autonomia').value || 200),
     reserva: Math.max(0, +$('#aj-reserva').value || 0),
     peajes: $('#aj-peajes').checked,
+    perfil: $('#aj-perfil').value,
   };
+  const cambiaPerfil = a.perfil !== (D.ajustes().perfil || 'normal');
   D.guardarAjustes(a);
+  if (cambiaPerfil) {
+    // Se vuelven a analizar las carreteras con la nueva sensibilidad.
+    S.celdas.clear(); S.tramos.clear(); S.capas.clear(); S.fallidas.clear(); S.cola = [];
+    capaTramos.clearLayers(); capaHalo.clearLayers(); capaZonas.clearLayers();
+    cargarGuardadas().then(revisarVista);
+  }
   $('#peajes').checked = a.peajes;
   $('#dlg-ajustes').close();
   estado('Ajustes guardados.', { dura: 2500 });

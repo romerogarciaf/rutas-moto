@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<link rel="stylesheet" href="css/app.css?v=9">
+<link rel="stylesheet" href="css/app.css?v=10">
 </head>
 <body>
 <header class="barra">
@@ -189,6 +189,14 @@
     <p id="aj-casa" class="nota"></p>
     <button class="sec" id="aj-cambiar-casa">Indicar dónde está mi casa</button>
 
+    <h3>Qué cuenta como curva</h3>
+    <select id="aj-perfil" aria-label="Sensibilidad de curvas">
+      <option value="estricta">Solo carreteras muy reviradas</option>
+      <option value="normal">Equilibrado (recomendado)</option>
+      <option value="amplia">Todas, incluidas curvas suaves y carreteras locales</option>
+    </select>
+    <p class="nota">Al cambiarlo, la app vuelve a analizar las carreteras de la zona que estés viendo.</p>
+
     <h3>Datos de carreteras</h3>
     <p class="nota">Las curvas se calculan con datos de OpenStreetMap y se guardan en el iPhone. Descargar Madrid y alrededores de una vez agiliza las rutas largas (tarda unos minutos).</p>
     <div class="fila">
@@ -197,11 +205,11 @@
     </div>
     <p id="aj-datos" class="nota"></p>
     <button class="pri ancho" id="aj-guardar">Guardar ajustes</button>
-    <p class="creditos">Versión 9. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
+    <p class="creditos">Versión 10. Mapa y carreteras © colaboradores de OpenStreetMap. Rutas: openrouteservice.org (HeiGIT). Radares: Dirección General de Tráfico (DGT).</p>
   </div>
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script type="module" src="js/app.js?v=9"></script>
+<script type="module" src="js/app.js?v=10"></script>
 </body>
 </html>
