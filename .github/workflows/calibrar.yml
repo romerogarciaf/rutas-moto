@@ -1,0 +1,22 @@
+name: Calibrar curvas
+on:
+  workflow_dispatch:
+jobs:
+  calibrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Analizar zonas reales
+        run: node scripts/calibrar.mjs
+      - name: Dibujar mapas
+        run: |
+          pip install --quiet matplotlib
+          python3 scripts/calibrar_mapas.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: calibracion
+          path: calibracion/
