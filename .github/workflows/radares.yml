@@ -16,6 +16,7 @@ jobs:
         run: |
           ok=0
           for url in \
+            https://nap.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml \
             http://infocar.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml \
             https://infocar.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml ; do
             for intento in 1 2 3; do
