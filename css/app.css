@@ -282,7 +282,10 @@ input[type="radio"], input[type="checkbox"] { width: 20px; height: 20px; accent-
 .pin-mapa.salida { background: #2f8a4c; } .pin-mapa.lugar { background: var(--acento); } .pin-mapa.destino { background: #1b1f22; }
 .gas-mapa { width: 22px; height: 22px; border-radius: 6px; background: #fff; border: 2px solid #1b1f22; display: grid; place-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
 .gas-mapa svg { width: 13px; height: 13px; }
-.yo { width: 18px; height: 18px; border-radius: 50%; background: #2f6fe0; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(47,111,224,.25); }
+.yo { width: 18px; height: 18px; border-radius: 50%; background: #2f6fe0; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); position: relative; }
+.yo::after { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 2px solid rgba(47,111,224,.6); animation: latido 2s ease-out infinite; }
+@keyframes latido { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .yo::after { animation: none; opacity: .4; } }
 
 @media (min-width: 900px) {
   .panel { left: 12px; right: auto; bottom: 12px; width: 400px; max-height: calc(100% - var(--alto-barra) - 36px); border-radius: 18px; }

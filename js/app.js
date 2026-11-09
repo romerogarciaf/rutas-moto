@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=15';
-import * as D from './datos.js?v=15';
+import * as C from './curvas.js?v=16';
+import * as D from './datos.js?v=16';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -1286,40 +1286,60 @@ $('#aj-borrar').addEventListener('click', async (e) => {
 });
 
 // ---------- Mi posición ----------
-let vigilancia = null, marcaYo = null, siguiendo = false, bloqueo = null;
+// El punto azul se muestra siempre que la app tenga permiso de localización.
+// El botón de la flecha centra el mapa en ti; púlsalo otra vez para que el mapa te siga.
+let vigilancia = null, marcaYo = null, circuloYo = null, ultimaPos = null, siguiendo = false, bloqueo = null;
 async function pedirPantallaEncendida() {
   try { bloqueo = await navigator.wakeLock?.request('screen'); } catch { bloqueo = null; }
 }
-document.addEventListener('visibilitychange', () => { if (siguiendo && document.visibilityState === 'visible') pedirPantallaEncendida(); });
+function pintarPosicion(pos) {
+  const p = [pos.coords.latitude, pos.coords.longitude];
+  ultimaPos = p;
+  const prec = Math.min(pos.coords.accuracy || 0, 2000);
+  if (!marcaYo) {
+    circuloYo = L.circle(p, { radius: prec, color: '#2f6fe0', weight: 1, opacity: 0.35, fillColor: '#2f6fe0', fillOpacity: 0.12, interactive: false }).addTo(mapa);
+    marcaYo = L.marker(p, { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: '', html: '<div class="yo"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(mapa);
+  } else {
+    marcaYo.setLatLng(p);
+    circuloYo.setLatLng(p); circuloYo.setRadius(prec);
+  }
+  $('#btn-posicion').classList.add('activo');
+  if (siguiendo) mapa.panTo(p);
+}
+function iniciarPosicion(avisar = false) {
+  if (vigilancia !== null || !navigator.geolocation) return;
+  vigilancia = navigator.geolocation.watchPosition(pintarPosicion, (err) => {
+    navigator.geolocation.clearWatch(vigilancia); vigilancia = null;
+    $('#btn-posicion').classList.remove('activo');
+    if (avisar || err.code === 1) estado('No se puede mostrar tu posición. Revisa en Ajustes del iPhone › Privacidad › Localización que Safari tenga permiso.', { error: true, dura: 7000 });
+  }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+}
+// Al volver a la app, el iPhone puede haber pausado la localización: se reanuda.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (vigilancia !== null) { navigator.geolocation.clearWatch(vigilancia); vigilancia = null; }
+  iniciarPosicion();
+  if (siguiendo) pedirPantallaEncendida();
+});
 $('#btn-posicion').addEventListener('click', () => {
   const b = $('#btn-posicion');
-  if (vigilancia === null) {
-    vigilancia = navigator.geolocation.watchPosition((pos) => {
-      const p = [pos.coords.latitude, pos.coords.longitude];
-      if (!marcaYo) {
-        marcaYo = L.marker(p, { interactive: false, icon: L.divIcon({ className: '', html: '<div class="yo"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(mapa);
-        mapa.setView(p, Math.max(mapa.getZoom(), 13));
-      } else marcaYo.setLatLng(p);
-      if (siguiendo) mapa.panTo(p);
-    }, () => {
-      estado('No se pudo obtener tu posición. Revisa el permiso de localización de Safari.', { error: true, dura: 6000 });
-      navigator.geolocation.clearWatch(vigilancia); vigilancia = null; b.className = 'btn-posicion';
-    }, { enableHighAccuracy: true, maximumAge: 3000 });
-    b.className = 'btn-posicion activo';
-  } else if (!siguiendo) {
-    siguiendo = true; b.className = 'btn-posicion siguiendo';
+  iniciarPosicion(true);
+  if (!ultimaPos) { estado('Buscando tu posición…', { dura: 4000 }); return; }
+  if (!siguiendo) {
+    const centrado = mapa.getCenter && C.dist([mapa.getCenter().lat, mapa.getCenter().lng], ultimaPos) < 150;
+    if (!centrado) { mapa.setView(ultimaPos, Math.max(mapa.getZoom(), 13)); return; }
+    siguiendo = true; b.classList.add('siguiendo');
     pedirPantallaEncendida();
-    if (marcaYo) mapa.setView(marcaYo.getLatLng(), Math.max(mapa.getZoom(), 14));
+    mapa.setView(ultimaPos, Math.max(mapa.getZoom(), 14));
     $('#panel').classList.add('plegado');
-    estado('Siguiéndote. La pantalla se mantendrá encendida.', { dura: 3000 });
+    estado('Siguiéndote. La pantalla se mantendrá encendida. Toca otra vez para dejar de seguirte.', { dura: 4000 });
   } else {
-    siguiendo = false; navigator.geolocation.clearWatch(vigilancia); vigilancia = null;
-    marcaYo?.remove(); marcaYo = null; bloqueo?.release?.(); bloqueo = null;
-    b.className = 'btn-posicion';
+    siguiendo = false; b.classList.remove('siguiendo');
+    bloqueo?.release?.(); bloqueo = null;
   }
 });
 mapa.on('dragstart', () => {
-  if (siguiendo) { siguiendo = false; $('#btn-posicion').className = 'btn-posicion activo'; bloqueo?.release?.(); bloqueo = null; }
+  if (siguiendo) { siguiendo = false; $('#btn-posicion').classList.remove('siguiendo'); bloqueo?.release?.(); bloqueo = null; }
 });
 
 // ---------- Inicio ----------
@@ -1329,6 +1349,7 @@ mapa.on('dragstart', () => {
   if (a.habitual) { S.salida = { p: a.habitual.p, etiqueta: a.habitual.etiqueta }; mapa.setView(a.habitual.p, 11); }
   pintarCamposPunto();
   pintarListaTramos();
+  iniciarPosicion();
   await cargarGuardadas();
   importarPrecargadas();
   cargarRadares();
