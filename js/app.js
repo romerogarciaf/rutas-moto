@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=16';
-import * as D from './datos.js?v=16';
+import * as C from './curvas.js?v=17';
+import * as D from './datos.js?v=17';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -205,8 +205,10 @@ async function asegurarZona(bbox) {
   const celdas = D.celdasDe(bbox).filter((c) => !S.celdas.has(c.clave));
   if (celdas.length > 70) throw new Error('La zona es demasiado grande. Reduce el tiempo o la distancia.');
   S.cola.length = 0; // el diseño tiene prioridad sobre la carga de la vista
-  let n = 0, fallos = 0;
+  let n = 0, fallos = 0, pendientes = 0;
+  const limite = Date.now() + 60000; // como mucho un minuto descargando; luego se diseña con lo que haya
   for (const c of celdas) {
+    if (Date.now() > limite) { pendientes = celdas.length - n; break; }
     n++;
     estado(`Preparando las carreteras de la zona… ${n} de ${celdas.length}`);
     try {
@@ -215,7 +217,9 @@ async function asegurarZona(bbox) {
       anadirTramos(reg.tramos);
     } catch { fallos++; S.fallidas.add(c.clave); }
   }
-  if (fallos) estado(`${fallos} de ${celdas.length} zonas no se pudieron descargar (el servidor de mapas está saturado). Diseño la ruta con el resto.`, { dura: 6000 });
+  const sinDatos = fallos + pendientes;
+  if (sinDatos) estado(`${sinDatos} de ${celdas.length} zonas aún sin datos (el servidor de mapas va lento). Diseño la ruta con el resto.`, { dura: 7000 });
+  if (sinDatos === celdas.length && !tramosEn(bbox).length) throw new Error('Aún no hay datos de curvas de esta zona y el servidor de mapas no responde. Vuelve a intentarlo en un rato.');
 }
 function tramosEn(bbox) {
   return [...S.tramos.values()].filter((t) => {

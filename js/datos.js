@@ -1,5 +1,5 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass, cfgPerfil } from './curvas.js?v=16';
+import { procesarOverpass, cfgPerfil } from './curvas.js?v=17';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
@@ -82,7 +82,7 @@ async function overpass(query, intentos = 2) {
     for (let n = 0; n < intentos; n++) {
       for (const url of OVERPASS) {
         const ctrl = new AbortController();
-        const reloj = setTimeout(() => ctrl.abort(), 75000);
+        const reloj = setTimeout(() => ctrl.abort(), 45000);
         try {
           const r = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: query }), signal: ctrl.signal });
           if (r.ok) return await r.json();
