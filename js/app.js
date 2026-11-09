@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=14';
-import * as D from './datos.js?v=14';
+import * as C from './curvas.js?v=15';
+import * as D from './datos.js?v=15';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -204,16 +204,18 @@ mapa.on('moveend', () => { clearTimeout(tVista); tVista = setTimeout(revisarVist
 async function asegurarZona(bbox) {
   const celdas = D.celdasDe(bbox).filter((c) => !S.celdas.has(c.clave));
   if (celdas.length > 70) throw new Error('La zona es demasiado grande. Reduce el tiempo o la distancia.');
-  let n = 0;
+  S.cola.length = 0; // el diseño tiene prioridad sobre la carga de la vista
+  let n = 0, fallos = 0;
   for (const c of celdas) {
     n++;
-    estado(`Descargando carreteras de la zona… ${n} de ${celdas.length}${celdas.length > 6 ? ' (solo la primera vez)' : ''}`);
+    estado(`Preparando las carreteras de la zona… ${n} de ${celdas.length}`);
     try {
       const reg = await D.descargarCelda(c.i, c.j);
       S.celdas.add(c.clave);
       anadirTramos(reg.tramos);
-    } catch { S.fallidas.add(c.clave); }
+    } catch { fallos++; S.fallidas.add(c.clave); }
   }
+  if (fallos) estado(`${fallos} de ${celdas.length} zonas no se pudieron descargar (el servidor de mapas está saturado). Diseño la ruta con el resto.`, { dura: 6000 });
 }
 function tramosEn(bbox) {
   return [...S.tramos.values()].filter((t) => {

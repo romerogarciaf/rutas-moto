@@ -1,9 +1,9 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass, cfgPerfil } from './curvas.js?v=14';
+import { procesarOverpass, cfgPerfil } from './curvas.js?v=15';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
-const VERSION = 'v3'; // cambia al recalibrar para volver a analizar las carreteras
+export const VERSION = 'v3'; // cambia al recalibrar para volver a analizar las carreteras
 const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
@@ -68,33 +68,69 @@ function limites(i, j) {
   return { s: i * TAM_CELDA, n: (i + 1) * TAM_CELDA, w: j * TAM_CELDA, e: (j + 1) * TAM_CELDA };
 }
 
+// Las consultas al servidor público se hacen de una en una y con tiempo máximo,
+// para no saturarlo ni quedarse esperando indefinidamente.
+let colaOverpass = Promise.resolve();
+function enCola(fn) {
+  const p = colaOverpass.then(fn, fn);
+  colaOverpass = p.catch(() => {});
+  return p;
+}
 async function overpass(query, intentos = 2) {
-  let ultimo;
-  for (let n = 0; n < intentos; n++) {
-    for (const url of OVERPASS) {
-      try {
-        const r = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: query }) });
-        if (r.ok) return await r.json();
-        ultimo = new Error(`El servidor de mapas respondió ${r.status}`);
-        if (r.status === 429 || r.status === 504) await espera(4000);
-      } catch (e) { ultimo = e; }
+  return enCola(async () => {
+    let ultimo;
+    for (let n = 0; n < intentos; n++) {
+      for (const url of OVERPASS) {
+        const ctrl = new AbortController();
+        const reloj = setTimeout(() => ctrl.abort(), 75000);
+        try {
+          const r = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: query }), signal: ctrl.signal });
+          if (r.ok) return await r.json();
+          ultimo = new Error(`el servidor de mapas respondió ${r.status}`);
+          if (r.status === 429 || r.status === 504) await espera(5000);
+        } catch (e) {
+          ultimo = e.name === 'AbortError' ? new Error('el servidor de mapas no ha respondido a tiempo') : e;
+        } finally { clearTimeout(reloj); }
+      }
     }
-  }
-  throw new Error('No se pudieron descargar los datos de carreteras. ' + (ultimo?.message || ''));
+    throw new Error('No se pudieron descargar los datos de carreteras: ' + (ultimo?.message || 'error desconocido') + '.');
+  });
 }
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const SIN_ASFALTAR = 'unpaved|gravel|fine_gravel|dirt|earth|ground|grass|sand|mud|compacted|pebblestone|rock|wood';
-export async function descargarCelda(i, j) {
+let indiceP = null;
+function indicePrecalculadas() {
+  if (!indiceP) {
+    indiceP = fetch(`data/curvas/${VERSION}/indice.json`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  }
+  return indiceP;
+}
+export function consultaCelda(i, j, cfg) {
   const c = limites(i, j);
   const b = `${(c.s - MARGEN).toFixed(3)},${(c.w - MARGEN).toFixed(3)},${(c.n + MARGEN).toFixed(3)},${(c.e + MARGEN).toFixed(3)}`;
-  const cfg = cfgPerfil(ajustes().perfil);
   const tipos = 'primary|secondary|tertiary|primary_link|secondary_link|tertiary_link' + (cfg.sinClasificar ? '|unclassified' : '');
-  const q = `[out:json][timeout:90];
+  return `[out:json][timeout:90];
 way["highway"~"^(${tipos})$"]["surface"!~"^(${SIN_ASFALTAR})$"]["tracktype"!~"."]["access"!~"^(no|private)$"](${b});
 out body geom qt;`;
-  const json = await overpass(q);
-  const tramos = procesarOverpass(json, c, cfg);
+}
+export { limites };
+export async function descargarCelda(i, j) {
+  const perfil = ajustes().perfil || 'normal';
+  const cfg = cfgPerfil(perfil);
+  let tramos = null;
+  // 1) Curvas precalculadas y publicadas junto a la app (Madrid y alrededores).
+  const ind = await indicePrecalculadas();
+  const c = limites(i, j);
+  if (ind && c.s >= ind.zona.s - 1e-9 && c.n <= ind.zona.n + 1e-9 && c.w >= ind.zona.w - 1e-9 && c.e <= ind.zona.e + 1e-9) {
+    try {
+      const r = await fetch(`data/curvas/${VERSION}/${perfil}/${i}_${j}.json`);
+      if (r.ok) tramos = (await r.json()).tramos;
+    } catch { /* se calcula al vuelo */ }
+  }
+  // 2) Si no las hay, se calculan con el servidor público de OpenStreetMap.
+  if (!tramos) tramos = procesarOverpass(await overpass(consultaCelda(i, j, cfg)), limites(i, j), cfg);
   const reg = { t: Date.now(), tramos };
   await idb.put('celdas', reg, claveCelda(i, j));
   return reg;
