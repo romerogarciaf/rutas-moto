@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=18';
-import * as D from './datos.js?v=18';
+import * as C from './curvas.js?v=19';
+import * as D from './datos.js?v=19';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -698,9 +698,54 @@ $('#btn-ci').addEventListener('click', (e) => { S.semilla = 1; ocupado(e.current
 $('#btn-ci-otra').addEventListener('click', (e) => { S.semilla++; ocupado(e.currentTarget, disenarCircular); });
 
 // ---------- Resultado ----------
-function curvasDeRuta(coords) {
+// Partes del recorrido que van por un tramo de curvas conocido (ya filtrado: sin calles, rotondas ni enlaces).
+// No se mide la forma de la línea de la ruta, porque en ciudad los giros y los ramales parecerían curvas.
+function curvasDeRuta(coords, plan = []) {
   try {
-    return C.tramosDeCadena({ coords, ids: ['ruta'], ref: '', name: '' }, C.cfgPerfil(D.ajustes().perfil));
+    const G = 0.0005; // celda de la rejilla, unos 50 m
+    const rejilla = new Map();
+    const meter = (t) => {
+      for (const p of C.remuestrear(t.coords, 25)) {
+        const k = `${Math.floor(p[0] / G)}:${Math.floor(p[1] / G)}`;
+        if (!rejilla.has(k)) rejilla.set(k, []);
+        rejilla.get(k).push([p, t.lvl]);
+      }
+    };
+    plan.forEach((x) => meter(x.t));
+    const caja = coords.reduce((b, [la, lo]) => ({ s: Math.min(b.s, la), n: Math.max(b.n, la), w: Math.min(b.w, lo), e: Math.max(b.e, lo) }), { s: 90, n: -90, w: 180, e: -180 });
+    for (const t of S.tramos.values()) {
+      const [la, lo] = C.centro(t.coords);
+      if (la > caja.s - 0.05 && la < caja.n + 0.05 && lo > caja.w - 0.05 && lo < caja.e + 0.05) meter(t);
+    }
+    const pts = C.remuestrear(coords, 25);
+    const nivel = pts.map((p) => {
+      const i = Math.floor(p[0] / G), j = Math.floor(p[1] / G);
+      let mejor = 0, dmin = 30;
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+        for (const [q, l] of rejilla.get(`${i + a}:${j + b}`) || []) {
+          const d = C.dist(p, q);
+          if (d < dmin) { dmin = d; mejor = l; }
+        }
+      }
+      return mejor;
+    });
+    const out = [];
+    let i = 0;
+    while (i < pts.length) {
+      if (!nivel[i]) { i++; continue; }
+      let j = i, hueco = 0, ultimo = i;
+      while (j < pts.length && hueco <= 3) { if (nivel[j]) { ultimo = j; hueco = 0; } else hueco++; j++; }
+      const tramo = pts.slice(i, ultimo + 1);
+      const km = C.longitud(tramo) / 1000;
+      if (km >= 0.4) {
+        const cuenta = [0, 0, 0, 0];
+        for (let k = i; k <= ultimo; k++) cuenta[nivel[k]]++;
+        const lvl = [1, 2, 3].reduce((a, b) => (cuenta[b] > cuenta[a] ? b : a), 1);
+        out.push({ coords: tramo, km, lvl });
+      }
+      i = ultimo + 1;
+    }
+    return out;
   } catch { return []; }
 }
 function resumenCurvas(curvas) {
@@ -719,7 +764,7 @@ function mostrarResultado(r) {
   capaGas.clearLayers();
   // Curvas del propio recorrido: se calculan sobre la línea de la ruta con el mismo criterio que el mapa
   // y se dibujan como una franja de color a ambos lados de la línea azul.
-  const curvasRuta = curvasDeRuta(r.coords);
+  const curvasRuta = curvasDeRuta(r.coords, r.plan || []);
   for (const t of curvasRuta) L.polyline(t.coords, { color: COLOR[t.lvl], weight: 17, opacity: 0.95, lineCap: 'butt', interactive: false }).addTo(capaRuta);
   L.polyline(r.coords, { color: '#ffffff', weight: 8, opacity: 0.9, interactive: false }).addTo(capaRuta);
   L.polyline(r.coords, { color: '#1b4fa3', weight: 4.5, opacity: 1, interactive: false }).addTo(capaRuta);
