@@ -1,5 +1,5 @@
-import * as C from './curvas.js?v=17';
-import * as D from './datos.js?v=17';
+import * as C from './curvas.js?v=18';
+import * as D from './datos.js?v=18';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -1354,6 +1354,7 @@ mapa.on('dragstart', () => {
   pintarCamposPunto();
   pintarListaTramos();
   iniciarPosicion();
+  await D.prepararDatos();
   await cargarGuardadas();
   importarPrecargadas();
   cargarRadares();

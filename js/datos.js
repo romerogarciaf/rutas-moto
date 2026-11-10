@@ -1,9 +1,19 @@
 // Acceso a servicios externos y caché local.
-import { procesarOverpass, cfgPerfil } from './curvas.js?v=17';
+import { procesarOverpass, cfgPerfil } from './curvas.js?v=18';
 
 export const TAM_CELDA = 0.25;   // grados
 const MARGEN = 0.06;             // grados extra alrededor de cada celda
-export const VERSION = 'v3'; // cambia al recalibrar para volver a analizar las carreteras
+export const VERSION = 'v4'; // versión del criterio de curvas de este código; cambia al recalibrar
+// Versión de las curvas precalculadas publicadas (data/curvas/actual.json). Mientras se publica una nueva,
+// la app sigue usando la anterior para no tener que calcularlo todo al vuelo.
+let versionDatos = VERSION;
+export async function prepararDatos() {
+  try {
+    const r = await fetch('data/curvas/actual.json', { cache: 'no-cache' });
+    if (r.ok) versionDatos = (await r.json()).version || VERSION;
+  } catch { /* sin conexión: se usa lo guardado */ }
+  return versionDatos;
+}
 const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
@@ -55,7 +65,7 @@ export const idb = {
 };
 
 // ---------- Celdas de curvas ----------
-export const prefijoCeldas = () => `${VERSION}:${ajustes().perfil || 'normal'}:`;
+export const prefijoCeldas = () => `${versionDatos}:${ajustes().perfil || 'normal'}:`;
 export function claveCelda(i, j) { return `${prefijoCeldas()}${i}:${j}`; }
 export function celdasDe(bbox) {
   const out = [];
@@ -102,7 +112,7 @@ const SIN_ASFALTAR = 'unpaved|gravel|fine_gravel|dirt|earth|ground|grass|sand|mu
 let indiceP = null;
 function indicePrecalculadas() {
   if (!indiceP) {
-    indiceP = fetch(`data/curvas/${VERSION}/indice.json`, { cache: 'no-cache' })
+    indiceP = fetch(`data/curvas/${versionDatos}/indice.json`, { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   }
   return indiceP;
@@ -125,7 +135,7 @@ export async function descargarCelda(i, j) {
   const c = limites(i, j);
   if (ind && c.s >= ind.zona.s - 1e-9 && c.n <= ind.zona.n + 1e-9 && c.w >= ind.zona.w - 1e-9 && c.e <= ind.zona.e + 1e-9) {
     try {
-      const r = await fetch(`data/curvas/${VERSION}/${perfil}/${i}_${j}.json`);
+      const r = await fetch(`data/curvas/${versionDatos}/${perfil}/${i}_${j}.json`);
       if (r.ok) tramos = (await r.json()).tramos;
     } catch { /* se calcula al vuelo */ }
   }

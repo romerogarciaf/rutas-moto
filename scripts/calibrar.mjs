@@ -7,6 +7,7 @@ const ZONAS = {
   cadalso: { s: 40.13, n: 40.38, w: -4.62, e: -4.33 },
   sanmartin: { s: 40.26, n: 40.62, w: -4.56, e: -4.22 },
   quijorna: { s: 40.36, n: 40.52, w: -4.16, e: -3.94 },
+  madrid: { s: 40.38, n: 40.52, w: -3.82, e: -3.62 },
 };
 // Perfiles de prueba opcionales (scripts/perfiles-prueba.json) además de los de la app.
 const PRUEBA = fs.existsSync('scripts/perfiles-prueba.json') ? JSON.parse(fs.readFileSync('scripts/perfiles-prueba.json', 'utf8')) : {};

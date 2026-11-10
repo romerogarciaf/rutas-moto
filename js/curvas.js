@@ -231,8 +231,22 @@ export function centro(coords) {
 }
 
 // Procesa la respuesta de Overpass y devuelve los tramos cuyo centro cae en la celda.
+// Vías que no son carretera para disfrutar en moto: rotondas, enlaces, tramos urbanos y travesías.
+const CALLE = /^(calle|c\/|avenida|avda\.?|av\.|paseo|plaza|glorieta|traves[ií]a|ronda|bulevar|boulevard|carrera|costanilla|cuesta|callej[oó]n|pasaje|v[ií]a de servicio)\b/i;
+export function esUrbana(w) {
+  const t = w.tags || {};
+  if (t.junction === 'roundabout' || t.junction === 'circular') return true;
+  if (/_link$/.test(t.highway || '')) return true;
+  if (w.nodes && w.nodes.length > 2 && w.nodes[0] === w.nodes[w.nodes.length - 1]) return true; // vía cerrada (rotonda sin etiquetar)
+  const ms = parseInt(t.maxspeed, 10);
+  if (ms && ms <= 50) return true;
+  if (/urban/i.test(`${t['maxspeed:type'] || ''} ${t['zone:maxspeed'] || ''} ${t['source:maxspeed'] || ''}`)) return true;
+  if (!t.ref && CALLE.test((t.name || '').trim())) return true;
+  return false;
+}
+
 export function procesarOverpass(json, celda, cfg = CFG) {
-  const ways = (json.elements || []).filter((e) => e.type === 'way' && e.geometry && e.nodes && e.geometry.length === e.nodes.length);
+  const ways = (json.elements || []).filter((e) => e.type === 'way' && e.geometry && e.nodes && e.geometry.length === e.nodes.length && !esUrbana(e));
   const tramos = [];
   for (const c of encadenar(ways)) {
     for (const t of tramosDeCadena(c, cfg)) {

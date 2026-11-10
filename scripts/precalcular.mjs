@@ -47,4 +47,12 @@ for (const [i, j] of celdas) {
 }
 fs.writeFileSync(`${base}/indice.json`, JSON.stringify({ version: VERSION, fecha: new Date().toISOString(), zona: ZONA, celdas: celdas.length, fallos }));
 console.log(`Terminado: ${hechas} celdas, ${fallos} sin datos.`);
+// Si está casi completo, la app pasa a usar esta versión y se borran las anteriores.
+if (fallos <= 3) {
+  fs.writeFileSync('data/curvas/actual.json', JSON.stringify({ version: VERSION }) + '\n');
+  for (const d of fs.readdirSync('data/curvas')) {
+    if (/^v\d+$/.test(d) && d !== VERSION) fs.rmSync(`data/curvas/${d}`, { recursive: true, force: true });
+  }
+  console.log(`Publicada la versión ${VERSION}.`);
+}
 if (fallos > celdas.length / 2) process.exit(1);
